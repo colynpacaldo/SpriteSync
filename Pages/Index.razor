@@ -1,62 +1,104 @@
 @page "/"
 @inject CartStateService Cart
 
-<div class="max-w-7xl mx-auto p-6 text-slate-100">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-2">Discovery Hub</h1>
-            <p class="text-slate-400">Browse curated 2D sprites, tilesets, UI kits, and sound effects for indie devs.</p>
+<div class="max-w-7xl mx-auto px-6 py-6 text-slate-100">
+    
+    <!-- Hero / Featured Banner -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-slate-800/80 p-8 md:p-10 mb-8 shadow-2xl">
+        <div class="relative z-10 max-w-2xl">
+            <span class="inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-mono font-bold px-3 py-1 rounded-full mb-4">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                COMMUNITY MARKETPLACE • 100% ROYALTY-FREE
+            </span>
+            <h1 class="text-3xl md:text-5xl font-black tracking-tight text-white mb-3">
+                Handcrafted 2D Assets for Indie Developers
+            </h1>
+            <p class="text-slate-400 text-sm md:text-base leading-relaxed mb-6">
+                Direct export to Godot, Unity, and GameMaker. Test full animation states in browser with verified commercial licensing.
+            </p>
+            <div class="flex flex-wrap gap-4 text-xs font-medium text-slate-400">
+                <div class="flex items-center gap-1.5"><span class="text-indigo-400">✓</span> Instant .ASEPRITE and .PNG</div>
+                <div class="flex items-center gap-1.5"><span class="text-indigo-400">✓</span> Multi-license commercial rights</div>
+                <div class="flex items-center gap-1.5"><span class="text-indigo-400">✓</span> Zero asset runtime fees</div>
+            </div>
         </div>
-        
-        <div class="relative w-full md:w-72">
-            <input type="text" placeholder="Search sprites, tilesets..." 
-                   @bind="SearchQuery" @bind:event="oninput"
-                   class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 pl-10 focus:outline-none focus:border-indigo-500 transition-colors text-sm shadow-inner" />
-            <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-        </div>
+        <div class="absolute right-0 bottom-0 top-0 w-1/3 opacity-15 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent"></div>
     </div>
 
-    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 mb-8 flex flex-wrap gap-4 items-center justify-between shadow-lg">
-        <div class="flex flex-wrap gap-3 items-center">
-            <select @bind="SelectedCategory" @bind:after="ApplyFilters" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
-                <option value="All">All Categories</option>
-                <option value="Spritesheet">Spritesheets</option>
-                <option value="Tileset">Tilesets</option>
-                <option value="UI Pack">UI Packs</option>
-                <option value="SFX">SFX / Audio</option>
-            </select>
+    <!-- Multi-Faceted Filter & Search Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 mb-8 space-y-4 shadow-lg">
+        
+        <!-- Search and Primary Categories -->
+        <div class="flex flex-col md:flex-row gap-3 justify-between items-center">
+            
+            <!-- Category Tabs -->
+            <div class="flex gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 text-xs font-semibold">
+                @foreach (var cat in new[] { "All", "Spritesheet", "Tileset", "UI Pack", "SFX" })
+                {
+                    <button @onclick="() => SetCategory(cat)" 
+                            class="px-3.5 py-2 rounded-xl transition-all whitespace-nowrap @(SelectedCategory == cat ? "bg-indigo-600 text-white shadow" : "bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800")">
+                        @cat
+                    </button>
+                }
+            </div>
 
-            <select @bind="SelectedStyle" @bind:after="ApplyFilters" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
-                <option value="All">All Art Styles</option>
-                <option value="Pixel Art">Pixel Art</option>
-                <option value="Vector">Vector</option>
-                <option value="Hand-drawn">Hand-drawn</option>
-            </select>
-
-            <div class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
-                <span>Max: <strong class="text-emerald-400 font-mono">${MaxPrice}</strong></span>
-                <input type="range" min="5" max="50" step="5" @bind="MaxPrice" @bind:after="ApplyFilters" class="accent-indigo-500 cursor-pointer w-24" />
+            <!-- Search Field -->
+            <div class="relative w-full md:w-80">
+                <input type="text" placeholder="Search sprites, tags, creators..." 
+                       @bind="SearchQuery" @bind:event="oninput"
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 pl-9 focus:outline-none focus:border-indigo-500 transition-colors text-xs text-white" />
+                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
         </div>
 
-        <div class="text-xs text-slate-400 font-mono">
-            Showing <span class="text-white font-bold">@FilteredAssets.Count()</span> assets
+        <!-- Secondary Controls: Art Style & Clean Price Tiers (No distracting raw sliders!) -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/80 text-xs">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-slate-500 font-medium">Art Style:</span>
+                @foreach (var style in new[] { "All", "Pixel Art", "Vector", "Hand-drawn" })
+                {
+                    <button @onclick="() => SelectedStyle = style" 
+                            class="px-2.5 py-1 rounded-lg transition-colors @(SelectedStyle == style ? "bg-slate-700 text-white font-bold" : "text-slate-400 hover:text-slate-200")">
+                        @style
+                    </button>
+                }
+            </div>
+
+            <!-- Price Tier Selector -->
+            <div class="flex items-center gap-2">
+                <span class="text-slate-500 font-medium">Price:</span>
+                <div class="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                    <button @onclick='() => PriceTier = "all"' class="px-2.5 py-1 rounded-md text-[11px] font-medium @(PriceTier == "all" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white")">All</button>
+                    <button @onclick='() => PriceTier = "under15"' class="px-2.5 py-1 rounded-md text-[11px] font-medium @(PriceTier == "under15" ? "bg-slate-800 text-emerald-400" : "text-slate-400 hover:text-white")">&lt; $15</button>
+                    <button @onclick='() => PriceTier = "15to25"' class="px-2.5 py-1 rounded-md text-[11px] font-medium @(PriceTier == "15to25" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white")">$15–$25</button>
+                    <button @onclick='() => PriceTier = "above25"' class="px-2.5 py-1 rounded-md text-[11px] font-medium @(PriceTier == "above25" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white")">$25+</button>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Asset Cards Responsive Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         @foreach (var asset in FilteredAssets)
         {
             <AssetCard Item="asset" OnAddToCart="HandleAddToCart" />
         }
     </div>
+
+    @if (!FilteredAssets.Any())
+    {
+        <div class="text-center py-20 bg-slate-900/40 rounded-3xl border border-slate-800 mt-6">
+            <p class="text-slate-400 text-base font-semibold">No assets found matching your criteria</p>
+            <p class="text-slate-600 text-xs mt-1">Try resetting the category or price tier filters.</p>
+        </div>
+    }
 </div>
 
 @code {
     private string SearchQuery { get; set; } = "";
     private string SelectedCategory { get; set; } = "All";
     private string SelectedStyle { get; set; } = "All";
-    private decimal MaxPrice { get; set; } = 40.00m;
+    private string PriceTier { get; set; } = "all";
     
     private List<Asset> AllAssets = new();
 
@@ -64,23 +106,25 @@
     {
         AllAssets = new List<Asset>
         {
-            new Asset { Id = 1, Name = "Cyberpunk Hero Pack", Category = "Spritesheet", ArtStyle = "Pixel Art", Creator = "@PixelForge", BasePrice = 15.00m, Rating = 4.9, ReviewCount = 42, Formats = new[] { ".png", ".aseprite" }, ImageUrl = "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=600&auto=format&fit=crop" },
-            new Asset { Id = 2, Name = "Fantasy Forest Tileset", Category = "Tileset", ArtStyle = "Pixel Art", Creator = "@ForestNomad", BasePrice = 12.50m, Rating = 4.8, ReviewCount = 19, Formats = new[] { ".png", ".tsx" }, ImageUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop" },
-            new Asset { Id = 3, Name = "Sci-Fi Clean UI Kit", Category = "UI Pack", ArtStyle = "Vector", Creator = "@InterfaceLab", BasePrice = 22.00m, Rating = 5.0, ReviewCount = 11, Formats = new[] { ".svg", ".png" }, ImageUrl = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600&auto=format&fit=crop" },
-            new Asset { Id = 4, Name = "Retro Dungeon 8-Bit SFX", Category = "SFX", ArtStyle = "Hand-drawn", Creator = "@ChiptuneWiz", BasePrice = 8.00m, Rating = 4.7, ReviewCount = 58, Formats = new[] { ".wav", ".ogg" }, ImageUrl = "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop" }
+            new Asset { Id = 1, Name = "Cyberpunk Hero Animator", Category = "Spritesheet", ArtStyle = "Pixel Art", Creator = "@PixelForge", CreatorAvatar = "🧙‍♂️", BasePrice = 15.00m, Rating = 4.9, ReviewCount = 42, Downloads = 1420, Formats = new[] { ".png", ".aseprite" }, IsStaffPick = true, ImageUrl = "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=600&auto=format&fit=crop" },
+            new Asset { Id = 2, Name = "Dark Fantasy Biome 16x16", Category = "Tileset", ArtStyle = "Pixel Art", Creator = "@ForestNomad", CreatorAvatar = "🌲", BasePrice = 12.50m, Rating = 4.8, ReviewCount = 19, Downloads = 890, Formats = new[] { ".png", ".tsx" }, IsStaffPick = false, ImageUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop" },
+            new Asset { Id = 3, Name = "Sci-Fi HUD & Modular UI", Category = "UI Pack", ArtStyle = "Vector", Creator = "@InterfaceLab", CreatorAvatar = "⚡", BasePrice = 24.00m, Rating = 5.0, ReviewCount = 31, Downloads = 2100, Formats = new[] { ".svg", ".png" }, IsStaffPick = true, ImageUrl = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600&auto=format&fit=crop" },
+            new Asset { Id = 4, Name = "Retro 8-Bit Dungeon Audio", Category = "SFX", ArtStyle = "Hand-drawn", Creator = "@ChiptuneWiz", CreatorAvatar = "🎹", BasePrice = 9.00m, Rating = 4.7, ReviewCount = 58, Downloads = 640, Formats = new[] { ".wav", ".ogg" }, IsStaffPick = false, ImageUrl = "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop" }
         };
     }
 
-    private void HandleAddToCart(Asset asset)
-    {
-        Cart.AddToCart(asset);
-    }
-
-    private void ApplyFilters() { }
+    private void SetCategory(string cat) => SelectedCategory = cat;
+    private void HandleAddToCart(Asset asset) => Cart.AddToCart(asset);
 
     private IEnumerable<Asset> FilteredAssets => AllAssets
-        .Where(a => string.IsNullOrWhiteSpace(SearchQuery) || a.Name.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))
+        .Where(a => string.IsNullOrWhiteSpace(SearchQuery) || a.Name.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) || a.Creator.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))
         .Where(a => SelectedCategory == "All" || a.Category == SelectedCategory)
         .Where(a => SelectedStyle == "All" || a.ArtStyle == SelectedStyle)
-        .Where(a => a.BasePrice <= MaxPrice);
+        .Where(a => PriceTier switch
+        {
+            "under15" => a.BasePrice < 15.00m,
+            "15to25" => a.BasePrice >= 15.00m && a.BasePrice <= 25.00m,
+            "above25" => a.BasePrice > 25.00m,
+            _ => true
+        });
 }

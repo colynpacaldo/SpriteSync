@@ -2,102 +2,144 @@
 @inject CartStateService Cart
 @implements IDisposable
 
-<div class="max-w-7xl mx-auto p-6 text-slate-100 min-h-[80vh]">
-    <a href="/" class="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors text-sm">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        Back to Market
-    </a>
+<div class="max-w-7xl mx-auto px-6 py-6 text-slate-100 min-h-[85vh]">
+    <nav class="flex items-center gap-2 text-xs text-slate-400 mb-6">
+        <a href="/" class="hover:text-white transition-colors">Marketplace</a>
+        <span>/</span>
+        <span class="text-slate-300">Spritesheet</span>
+        <span>/</span>
+        <span class="text-indigo-400 font-semibold">@CurrentAsset.Name</span>
+    </nav>
 
     <div class="lg:grid lg:grid-cols-12 gap-8 relative">
+        
+        <!-- Left: Interactive Engine Tester HUD (7 cols) -->
         <div class="lg:col-span-7 space-y-6">
-            <div class="bg-slate-800 rounded-3xl border border-slate-700 p-6 shadow-xl">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-xs font-mono uppercase tracking-widest text-indigo-400 font-bold">Live Sprite Tester</span>
-                    <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-lg border border-slate-700 text-xs">
-                        <span class="text-slate-400 text-[11px] px-1">Canvas:</span>
-                        <button @onclick='() => CanvasBg = "dark"' class="w-5 h-5 rounded bg-slate-950 border border-slate-700 @(CanvasBg == "dark" ? "ring-2 ring-indigo-500" : "")"></button>
-                        <button @onclick='() => CanvasBg = "light"' class="w-5 h-5 rounded bg-slate-200 border border-slate-400 @(CanvasBg == "light" ? "ring-2 ring-indigo-500" : "")"></button>
-                        <button @onclick='() => CanvasBg = "checkered"' class="w-5 h-5 rounded bg-checkered border border-slate-600 @(CanvasBg == "checkered" ? "ring-2 ring-indigo-500" : "")" title="Checkerboard"></button>
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+                
+                <!-- Inspector Header -->
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                        <span class="font-bold text-white uppercase tracking-wider">Engine Previewer</span>
+                        <span class="text-slate-500 font-mono">| 16x16 px scaled 400%</span>
+                    </div>
+
+                    <!-- Canvas Background Toggle -->
+                    <div class="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                        <span class="text-slate-500 text-[10px] uppercase font-bold mr-1">Canvas:</span>
+                        <button @onclick='() => CanvasBg = "dark"' class="w-4 h-4 rounded bg-slate-950 border border-slate-700 @(CanvasBg == "dark" ? "ring-2 ring-indigo-500" : "")" title="Dark Canvas"></button>
+                        <button @onclick='() => CanvasBg = "light"' class="w-4 h-4 rounded bg-slate-200 border border-slate-400 @(CanvasBg == "light" ? "ring-2 ring-indigo-500" : "")" title="Light Canvas"></button>
+                        <button @onclick='() => CanvasBg = "checkered"' class="w-4 h-4 rounded bg-checkered border border-slate-700 @(CanvasBg == "checkered" ? "ring-2 ring-indigo-500" : "")" title="Transparent Grid"></button>
                     </div>
                 </div>
 
-                <div class="aspect-video rounded-2xl flex flex-col items-center justify-center relative overflow-hidden border border-slate-700/80 transition-colors duration-300 @(CanvasBg == "dark" ? "bg-slate-950" : CanvasBg == "light" ? "bg-slate-100" : "bg-checkered")">
+                <!-- Simulation Canvas -->
+                <div class="aspect-video rounded-2xl flex flex-col items-center justify-center relative overflow-hidden border border-slate-800 transition-colors duration-200 @(CanvasBg == "dark" ? "bg-slate-950" : CanvasBg == "light" ? "bg-slate-200" : "bg-checkered")">
                     <div class="flex flex-col items-center gap-3">
-                        <div class="w-24 h-24 bg-indigo-500/10 border-2 border-indigo-400/30 rounded-xl flex items-center justify-center text-4xl shadow-2xl relative" style="image-rendering: pixelated;">
+                        <div class="w-28 h-28 bg-indigo-500/10 border-2 border-indigo-500/30 rounded-2xl flex items-center justify-center text-5xl shadow-2xl relative select-none">
                             @if (CurrentAnimation == "Idle") { <span>🧙‍♂️</span> }
                             else if (CurrentAnimation == "Run") { <span>🏃‍♂️</span> }
                             else { <span>⚔️</span> }
                             
-                            <span class="absolute bottom-1 right-2 text-[10px] font-mono text-indigo-300">F:@CurrentFrame/4</span>
+                            <span class="absolute bottom-1 right-2 text-[10px] font-mono text-indigo-300 bg-slate-900/80 px-1 rounded">F:@CurrentFrame/4</span>
                         </div>
-                        <span class="text-xs font-mono px-3 py-1 rounded-full @(CanvasBg == "light" ? "bg-slate-300 text-slate-800" : "bg-slate-900/80 text-slate-300 border border-slate-700")">
-                            State: <strong class="text-indigo-400">@CurrentAnimation</strong> (16x16 scaled 4x)
-                        </span>
+                    </div>
+
+                    <div class="absolute bottom-3 left-4 text-[11px] font-mono @(CanvasBg == "light" ? "text-slate-800 bg-white/70" : "text-slate-400 bg-slate-900/80") px-2.5 py-1 rounded-md backdrop-blur-sm">
+                        State: <strong class="text-indigo-400">@CurrentAnimation</strong> • @Fps FPS • Nearest-Neighbor
                     </div>
                 </div>
 
-                <div class="mt-4 bg-slate-900/80 border border-slate-700/80 p-4 rounded-2xl flex flex-wrap gap-4 items-center justify-between">
-                    <div class="flex gap-2">
+                <!-- Animation Controls -->
+                <div class="mt-4 bg-slate-950 border border-slate-800 p-4 rounded-2xl flex flex-wrap gap-4 items-center justify-between">
+                    <div class="flex gap-1.5">
                         @foreach (var state in new[] { "Idle", "Run", "Attack" })
                         {
-                            <button @onclick="() => SetAnimation(state)" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all @(CurrentAnimation == state ? "bg-indigo-600 text-white shadow-md" : "bg-slate-800 text-slate-400 hover:text-white")">
+                            <button @onclick="() => SetAnimation(state)" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all @(CurrentAnimation == state ? "bg-indigo-600 text-white shadow" : "bg-slate-900 text-slate-400 hover:text-white")">
                                 @state
                             </button>
                         }
                     </div>
 
                     <div class="flex items-center gap-3 text-xs">
-                        <button @onclick="TogglePlay" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200">
-                            @if (IsPlaying) { <span>⏸ Pause</span> } else { <span>▶ Play</span> }
+                        <button @onclick="TogglePlay" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-200 font-medium">
+                            @(IsPlaying ? "Pause" : "Play")
                         </button>
                         <div class="flex items-center gap-2">
-                            <span class="text-slate-400 font-mono">@Fps FPS</span>
-                            <input type="range" min="1" max="24" @bind="Fps" @bind:event="oninput" class="w-24 accent-indigo-500 cursor-pointer" />
+                            <span class="text-slate-500 font-mono text-[11px]">@Fps FPS</span>
+                            <input type="range" min="1" max="24" @bind="Fps" @bind:event="oninput" class="w-20 accent-indigo-500 cursor-pointer" />
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60"><div class="text-slate-400 text-xs">Dimensions</div><div class="text-white font-bold font-mono mt-1">32x32 px</div></div>
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60"><div class="text-slate-400 text-xs">Frames</div><div class="text-white font-bold font-mono mt-1">24 Total</div></div>
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60"><div class="text-slate-400 text-xs">Format</div><div class="text-white font-bold font-mono mt-1">PNG + Aseprite</div></div>
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60"><div class="text-slate-400 text-xs">Engine Support</div><div class="text-emerald-400 font-bold font-mono mt-1">Unity / Godot</div></div>
+
+            <!-- Technical Specifications -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
+                <h3 class="text-base font-bold text-white mb-4">Package Specifications</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80"><div class="text-slate-500">Grid Size</div><div class="text-white font-mono font-bold mt-1">32x32 px</div></div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80"><div class="text-slate-500">Color Palette</div><div class="text-white font-mono font-bold mt-1">DB32 Strict</div></div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80"><div class="text-slate-500">Total Frames</div><div class="text-white font-mono font-bold mt-1">24 Frames</div></div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80"><div class="text-slate-500">Engine Ready</div><div class="text-emerald-400 font-mono font-bold mt-1">Godot / Unity</div></div>
+                </div>
             </div>
         </div>
 
+        <!-- Right: Sticky Commercial License Picker (5 cols) -->
         <div class="lg:col-span-5 relative">
-            <div class="sticky top-24 bg-slate-900/90 backdrop-blur-xl border border-slate-800 p-7 rounded-3xl shadow-2xl">
-                <div class="flex justify-between items-start mb-2">
-                    <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Asset Pack #@Id</h1>
+            <div class="sticky top-20 bg-slate-900/95 backdrop-blur-xl border border-slate-800 p-6 sm:p-7 rounded-3xl shadow-2xl">
+                <div class="flex justify-between items-baseline mb-1">
+                    <h1 class="text-2xl font-black text-white">@CurrentAsset.Name</h1>
+                    <span class="text-emerald-400 font-extrabold text-2xl">${@CurrentPrice}</span>
                 </div>
-                <p class="text-slate-400 mb-6 text-sm border-b border-slate-800 pb-4">By <span class="text-indigo-400 font-medium">@CurrentAsset.Creator</span> • v1.2</p>
-
-                <div class="space-y-4 mb-6">
-                    <div @onclick="() => SelectLicense(false)" class="cursor-pointer p-5 rounded-2xl border-2 transition-all duration-200 @(!IsCommercial ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.15)]" : "border-slate-800 bg-slate-800/50 hover:border-slate-600")">
-                        <div class="flex justify-between items-center"><span class="font-bold text-lg text-white">Personal License</span><span class="text-lg font-black text-emerald-400">$@BasePrice</span></div>
-                        <p class="text-xs text-slate-400 mt-1">For single non-commercial indie game project.</p>
-                    </div>
-
-                    <div @onclick="() => SelectLicense(true)" class="cursor-pointer p-5 rounded-2xl border-2 transition-all duration-200 @(IsCommercial ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.15)]" : "border-slate-800 bg-slate-800/50 hover:border-slate-600")">
-                        <div class="flex justify-between items-center"><span class="font-bold text-lg @(IsCommercial ? "text-indigo-400" : "text-white")">Commercial Unlimited</span><span class="text-lg font-black text-emerald-400">$@(BasePrice * 3)</span></div>
-                        <p class="text-xs text-slate-400 mt-1">Unlimited commercial titles, Steam release + source .aseprite files.</p>
-                    </div>
+                <div class="flex items-center gap-2 text-xs text-slate-400 mb-6 pb-4 border-b border-slate-800">
+                    <span>By <strong class="text-slate-300">@CurrentAsset.Creator</strong></span>
+                    <span>•</span>
+                    <span class="text-amber-400">★ 4.9 (42 reviews)</span>
                 </div>
 
+                <!-- License Cards -->
+                <div class="space-y-3 mb-6">
+                    <div @onclick="() => SelectLicense(false)" 
+                         class="cursor-pointer p-4 rounded-2xl border-2 transition-all @(!IsCommercial ? "border-indigo-500 bg-indigo-500/10 shadow" : "border-slate-800 bg-slate-950/60 hover:border-slate-700")">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-sm text-white">Personal License</span>
+                            <span class="text-sm font-extrabold text-white">${@BasePrice}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Single non-commercial project or game jam entry.</p>
+                    </div>
+
+                    <div @onclick="() => SelectLicense(true)" 
+                         class="cursor-pointer p-4 rounded-2xl border-2 transition-all @(IsCommercial ? "border-indigo-500 bg-indigo-500/10 shadow" : "border-slate-800 bg-slate-950/60 hover:border-slate-700")">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-sm @(IsCommercial ? "text-indigo-400" : "text-white")">Commercial Unlimited</span>
+                            <span class="text-sm font-extrabold text-emerald-400">${@(BasePrice * 3)}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Unlimited Steam/commercial releases + source .ASEPRITE files.</p>
+                    </div>
+                </div>
+
+                <!-- CTA Add to Cart -->
                 @if (Cart.IsInCart(Id))
                 {
-                    <button @onclick="() => Cart.ToggleDrawer()" class="w-full bg-emerald-500/20 border-2 border-emerald-500 hover:bg-emerald-500/30 text-emerald-400 font-black text-base py-4 rounded-2xl transition-all shadow-lg flex justify-center items-center gap-2">
-                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                        In Cart • Open Drawer ($@CurrentPrice)
+                    <button @onclick="() => Cart.ToggleDrawer()" 
+                            class="w-full bg-emerald-500/20 border-2 border-emerald-500 hover:bg-emerald-500/30 text-emerald-400 font-black py-3.5 rounded-2xl transition-all shadow flex justify-center items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        In Cart • Open Drawer
                     </button>
                 }
                 else
                 {
-                    <button @onclick="AddToCart" class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black text-base py-4 rounded-2xl shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all flex justify-center items-center gap-2">
-                        Add to Cart - $@(CurrentPrice)
+                    <button @onclick="AddToCart" 
+                            class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black py-3.5 rounded-2xl shadow-lg transition-all flex justify-center items-center gap-2">
+                        Add to Cart • ${@CurrentPrice}
                     </button>
                 }
+
+                <div class="text-center mt-4">
+                    <span class="text-[11px] text-slate-500">Instant direct download upon checkout • Verified checksum</span>
+                </div>
             </div>
         </div>
     </div>
@@ -119,7 +161,7 @@
 
     protected override void OnInitialized()
     {
-        CurrentAsset = new Asset { Id = Id, Name = $"Hero Sprite Pack #{Id}", Category = "Spritesheet", BasePrice = BasePrice, Creator = "@PixelForge" };
+        CurrentAsset = new Asset { Id = Id, Name = "Cyberpunk Hero Animator", Category = "Spritesheet", BasePrice = BasePrice, Creator = "@PixelForge" };
         StartAnimationLoop();
     }
 

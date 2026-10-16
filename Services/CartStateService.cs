@@ -5,6 +5,7 @@ public class CartStateService
 {
     public List<CartItem> CartItems { get; private set; } = new();
     public List<VaultItem> VaultItems { get; private set; } = new();
+    public UserProfile User { get; set; } = new();
     public bool IsDrawerOpen { get; private set; } = false;
     public string AppliedDiscountCode { get; private set; } = "";
     public decimal DiscountPercent { get; private set; } = 0m;
@@ -13,16 +14,31 @@ public class CartStateService
 
     public CartStateService()
     {
+        // Pre-populate with realistic user history
         VaultItems.Add(new VaultItem
         {
-            Id = 99,
-            AssetName = "Fantasy Forest Tileset",
-            Category = "Tileset",
+            Id = 101,
+            AssetName = "Cyberpunk Hero Pack",
+            Category = "Spritesheet",
             LicenseTier = "Commercial",
-            LicenseKey = "SPR-COMM-8921-FNT",
+            LicenseKey = "SPR-COMM-9982-CYB",
             Version = "v1.2",
-            VersionNotes = "Added jump frames & water autotiles",
-            PurchaseDate = DateTime.Now.AddDays(-2)
+            VersionNotes = "Added wall-slide and attack animations",
+            FileSize = "14.2 MB",
+            PurchaseDate = DateTime.Now.AddDays(-14)
+        });
+
+        VaultItems.Add(new VaultItem
+        {
+            Id = 102,
+            AssetName = "Dark Forest 16x16 Tileset",
+            Category = "Tileset",
+            LicenseTier = "Personal",
+            LicenseKey = "SPR-PERS-4412-FOR",
+            Version = "v2.0",
+            VersionNotes = "Includes auto-tile bitmasking rules for Godot",
+            FileSize = "32.1 MB",
+            PurchaseDate = DateTime.Now.AddDays(-32)
         });
     }
 
@@ -51,7 +67,7 @@ public class CartStateService
             });
         }
         
-        IsDrawerOpen = true; 
+        IsDrawerOpen = true;
         NotifyStateChanged();
     }
 
@@ -115,11 +131,14 @@ public class CartStateService
                 AssetName = item.Asset.Name,
                 Category = item.Asset.Category,
                 LicenseTier = item.LicenseTier,
-                LicenseKey = $"SPR-{item.LicenseTier.Substring(0, 4).ToUpper()}-{Random.Shared.Next(1000, 9999)}-{item.Asset.Id}",
+                LicenseKey = $"SPR-{item.LicenseTier[..4].ToUpper()}-{Random.Shared.Next(1000, 9999)}-{item.Asset.Id}",
                 Version = item.Asset.Version,
                 VersionNotes = item.Asset.VersionNotes,
+                FileSize = $"{Random.Shared.Next(8, 38)}.{Random.Shared.Next(1, 9)} MB",
                 PurchaseDate = DateTime.Now
             });
+            User.AssetsOwned++;
+            User.TotalSpent += item.Price;
         }
         ClearCart();
     }

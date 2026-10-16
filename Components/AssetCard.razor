@@ -1,57 +1,85 @@
 @inject CartStateService Cart
 
-<div class="group bg-slate-800/80 rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden relative @(IsInCart ? "border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30" : "border-slate-700 hover:border-indigo-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]")">
-    @if (IsInCart)
-    {
-        <div class="absolute top-3 right-3 z-20 bg-emerald-500 text-slate-950 font-black text-xs px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 animate-in fade-in zoom-in duration-200">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-            IN CART
+<div class="group bg-slate-900/90 rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden relative shadow-md hover:shadow-2xl @(IsInCart ? "border-emerald-500/50 ring-1 ring-emerald-500/20" : "border-slate-800 hover:border-slate-700")">
+    
+    <!-- Badges Row -->
+    <div class="absolute top-3 inset-x-3 z-20 flex justify-between items-center pointer-events-none">
+        <div class="flex gap-1.5">
+            @if (Item.IsStaffPick)
+            {
+                <span class="bg-amber-500/90 text-slate-950 font-black text-[10px] tracking-wider px-2 py-0.5 rounded-full uppercase shadow">STAFF PICK</span>
+            }
+            <span class="bg-slate-950/80 backdrop-blur-md text-indigo-300 border border-slate-700/60 font-semibold text-[10px] px-2 py-0.5 rounded-full">@Item.ArtStyle</span>
         </div>
-    }
 
-    <a href="/asset/@Item.Id" class="overflow-hidden bg-[#161f30] aspect-video flex items-center justify-center relative cursor-pointer">
+        @if (IsInCart)
+        {
+            <div class="bg-emerald-500 text-slate-950 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full shadow flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                IN CART
+            </div>
+        }
+    </div>
+
+    <!-- Thumbnail View -->
+    <a href="/asset/@Item.Id" class="overflow-hidden bg-[#0d131f] aspect-video flex items-center justify-center relative cursor-pointer group-hover:brightness-105 transition-all">
         <img src="@Item.ImageUrl" alt="@Item.Name" 
-             class="transform group-hover:scale-105 transition-transform duration-300 object-cover w-full h-full opacity-90 group-hover:opacity-100" 
+             class="transform group-hover:scale-105 transition-transform duration-300 object-cover w-full h-full opacity-85 group-hover:opacity-100" 
              style="image-rendering: pixelated;" />
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent"></div>
-        <span class="absolute bottom-2 left-3 text-xs text-indigo-300 font-medium bg-slate-900/80 px-2 py-0.5 rounded backdrop-blur-sm">@Item.ArtStyle</span>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+        
+        <!-- Quick Specs Ribbon on image bottom -->
+        <div class="absolute bottom-2 left-3 right-3 flex justify-between items-center text-[11px] text-slate-300 font-mono">
+            <span class="bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-800">@Item.Dimensions</span>
+            <span class="bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-800">@Item.FrameCount Frames</span>
+        </div>
     </a>
     
-    <div class="p-5 flex flex-col flex-grow">
-        <div class="flex justify-between items-start mb-1">
-            <a href="/asset/@Item.Id" class="font-bold text-lg hover:text-indigo-400 transition-colors line-clamp-1">@Item.Name</a>
-            <span class="text-emerald-400 font-black text-lg ml-2">$@Item.BasePrice</span>
+    <!-- Body Info -->
+    <div class="p-4 flex flex-col flex-grow">
+        <div class="flex justify-between items-baseline mb-1">
+            <a href="/asset/@Item.Id" class="font-bold text-base text-slate-100 hover:text-indigo-400 transition-colors line-clamp-1">@Item.Name</a>
+            <span class="text-emerald-400 font-extrabold text-base ml-2">${@Item.BasePrice}</span>
         </div>
         
         <div class="flex items-center gap-2 mb-3 text-xs text-slate-400">
-            <span>@Item.Creator</span>
+            <span class="flex items-center gap-1 text-slate-300">
+                <span>@Item.CreatorAvatar</span>
+                <span>@Item.Creator</span>
+            </span>
             <span>•</span>
-            <span class="text-amber-400 font-semibold flex items-center gap-1">
-                ★ @Item.Rating <span class="text-slate-500 font-normal">(@Item.ReviewCount)</span>
+            <span class="text-amber-400 font-medium flex items-center gap-0.5">
+                ★ @Item.Rating <span class="text-slate-500">(@Item.ReviewCount)</span>
             </span>
         </div>
         
-        <div class="flex gap-1.5 mb-5 flex-wrap">
+        <!-- Formats & Engine tags -->
+        <div class="flex gap-1 mb-4 flex-wrap">
             @foreach(var format in Item.Formats)
             {
-                <span class="text-[11px] bg-slate-900/60 border border-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">@format</span>
+                <span class="text-[10px] bg-slate-800 border border-slate-700/60 text-slate-400 px-1.5 py-0.5 rounded font-mono">@format</span>
+            }
+            @foreach(var engine in Item.CompatibleEngines)
+            {
+                <span class="text-[10px] bg-indigo-950/40 border border-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-sans">@engine</span>
             }
         </div>
 
+        <!-- CTA Button -->
         <div class="mt-auto">
             @if (IsInCart)
             {
                 <button @onclick="() => Cart.ToggleDrawer()" 
-                        class="w-full bg-emerald-500/10 border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-400 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                    In Cart • View Drawer
+                        class="w-full bg-emerald-500/10 border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-400 font-bold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                    Added • Open Cart
                 </button>
             }
             else
             {
                 <button @onclick="() => OnAddToCart.InvokeAsync(Item)" 
-                        class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-2 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add to Cart
                 </button>
             }

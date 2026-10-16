@@ -13,4 +13,5 @@ public class VaultItem
     public bool IsDownloading { get; set; }
     public int DownloadProgress { get; set; }
     public bool IsDownloaded { get; set; }
+    public string FileSize { get; set; } = "18.4 MB";
 }
