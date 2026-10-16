@@ -18,7 +18,6 @@
             </div>
         </div>
 
-        <!-- Dev Profile Stats -->
         <div class="flex gap-4 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6 text-xs">
             <div>
                 <div class="text-slate-500">Engine</div>
@@ -38,11 +37,11 @@
     <!-- Navigation Tabs -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex p-1 bg-slate-900 border border-slate-800 rounded-xl">
-            <button @onclick='() => ActiveTab = "Vault"' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Vault" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
-                My Vault (@Cart.VaultItems.Count)
-            </button>
             <button @onclick='() => ActiveTab = "Cart"' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Cart" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
                 Active Checkout (@Cart.CartItems.Count)
+            </button>
+            <button @onclick='() => ActiveTab = "Vault"' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Vault" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
+                My Vault (@Cart.VaultItems.Count)
             </button>
             <button @onclick='() => ActiveTab = "Settings"' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Settings" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
                 Developer Profile & Settings
@@ -54,7 +53,63 @@
         </button>
     </div>
 
-    @if (ActiveTab == "Vault")
+    @if (ActiveTab == "Cart")
+    {
+        <!-- Checkout Flow -->
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+            <h2 class="text-xl font-bold mb-6 text-white">Review & Checkout</h2>
+            
+            @if(Cart.CartItems.Any())
+            {
+                <EditForm Model="CheckoutModel" OnValidSubmit="ProcessCheckout">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="space-y-3 mb-6">
+                        @foreach(var item in Cart.CartItems)
+                        {
+                            <div class="flex justify-between items-center bg-slate-950 border border-slate-800 p-4 rounded-xl">
+                                <div>
+                                    <div class="font-bold text-white text-sm">@item.Asset.Name</div>
+                                    <span class="text-xs text-indigo-400 uppercase font-mono">@item.LicenseTier License</span>
+                                </div>
+                                <span class="text-emerald-400 font-extrabold text-base">${@item.Price}</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 flex gap-3">
+                        <input type="text" placeholder="Promo / Student discount (try INDIE20)" @bind="PromoInput" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs flex-1 focus:border-indigo-500 outline-none" />
+                        <button type="button" @onclick="ApplyPromo" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-xs font-bold">Apply</button>
+                    </div>
+
+                    @if (Cart.DiscountPercent > 0)
+                    {
+                        <div class="text-xs text-emerald-400 font-mono mb-4">Discount: @(Cart.DiscountPercent * 100)% off applied!</div>
+                    }
+
+                    <div class="flex justify-between items-center p-4 border-t border-slate-800 mb-6">
+                        <span class="text-slate-400 text-sm">Order Total</span>
+                        <span class="text-2xl font-black text-white">${@Cart.Total}</span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="w-full">
+                            <InputText @bind-Value="CheckoutModel.Email" placeholder="Developer receipt email address..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 focus:border-indigo-500 outline-none text-xs" />
+                            <ValidationMessage For="@(() => CheckoutModel.Email)" class="text-rose-400 text-xs mt-1" />
+                        </div>
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-8 py-3 rounded-xl font-black text-sm whitespace-nowrap transition-all shadow-lg active:scale-95">
+                            Authorize & Add to Vault
+                        </button>
+                    </div>
+                </EditForm>
+            }
+            else
+            {
+                <div class="text-center py-16 text-slate-500">Your cart is currently empty.</div>
+            }
+        </div>
+    }
+    else if (ActiveTab == "Vault")
     {
         <!-- Purchased Assets Library -->
         <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
@@ -114,65 +169,8 @@
             </div>
         </div>
     }
-    else if (ActiveTab == "Cart")
-    {
-        <!-- Checkout Flow -->
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-white">Review & Checkout</h2>
-            
-            @if(Cart.CartItems.Any())
-            {
-                <EditForm Model="CheckoutModel" OnValidSubmit="ProcessCheckout">
-                    <DataAnnotationsValidator />
-                    
-                    <div class="space-y-3 mb-6">
-                        @foreach(var item in Cart.CartItems)
-                        {
-                            <div class="flex justify-between items-center bg-slate-950 border border-slate-800 p-4 rounded-xl">
-                                <div>
-                                    <div class="font-bold text-white text-sm">@item.Asset.Name</div>
-                                    <span class="text-xs text-indigo-400 uppercase font-mono">@item.LicenseTier License</span>
-                                </div>
-                                <span class="text-emerald-400 font-extrabold text-base">${@item.Price}</span>
-                            </div>
-                        }
-                    </div>
-
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 flex gap-3">
-                        <input type="text" placeholder="Promo / Student discount (try INDIE20)" @bind="PromoInput" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs flex-1 focus:border-indigo-500 outline-none" />
-                        <button type="button" @onclick="ApplyPromo" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-xs font-bold">Apply</button>
-                    </div>
-
-                    @if (Cart.DiscountPercent > 0)
-                    {
-                        <div class="text-xs text-emerald-400 font-mono mb-4">Discount: @(Cart.DiscountPercent * 100)% off applied!</div>
-                    }
-
-                    <div class="flex justify-between items-center p-4 border-t border-slate-800 mb-6">
-                        <span class="text-slate-400 text-sm">Order Total</span>
-                        <span class="text-2xl font-black text-white">${@Cart.Total}</span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <div class="w-full">
-                            <InputText @bind-Value="CheckoutModel.Email" placeholder="Developer receipt email address..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 focus:border-indigo-500 outline-none text-xs" />
-                            <ValidationMessage For="@(() => CheckoutModel.Email)" class="text-rose-400 text-xs mt-1" />
-                        </div>
-                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-8 py-3 rounded-xl font-black text-sm whitespace-nowrap transition-all shadow-lg active:scale-95">
-                            Authorize & Add to Vault
-                        </button>
-                    </div>
-                </EditForm>
-            }
-            else
-            {
-                <div class="text-center py-16 text-slate-500">Your cart is currently empty.</div>
-            }
-        </div>
-    }
     else if (ActiveTab == "Settings")
     {
-        <!-- Developer Engine Preferences -->
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
             <h2 class="text-base font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3">Developer Engine Preferences</h2>
             
@@ -201,7 +199,6 @@
     }
 </div>
 
-<!-- Upload Pack Modal -->
 @if (ShowUploadModal)
 {
     <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -229,12 +226,46 @@
 }
 
 @code {
-    private string ActiveTab = "Vault";
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? TabQuery { get; set; }
+
+    private string ActiveTab = "Cart";
     private string PromoInput = "";
     private bool ShowUploadModal = false;
     private CheckoutForm CheckoutModel = new();
 
-    protected override void OnInitialized() => Cart.OnChange += StateHasChanged;
+    protected override void OnInitialized()
+    {
+        Cart.OnChange += StateHasChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Check query parameter (?tab=checkout vs ?tab=vault)
+        if (!string.IsNullOrWhiteSpace(TabQuery))
+        {
+            if (TabQuery.Equals("checkout", StringComparison.OrdinalIgnoreCase) || 
+                TabQuery.Equals("cart", StringComparison.OrdinalIgnoreCase))
+            {
+                ActiveTab = "Cart";
+                return;
+            }
+            if (TabQuery.Equals("vault", StringComparison.OrdinalIgnoreCase))
+            {
+                ActiveTab = "Vault";
+                return;
+            }
+            if (TabQuery.Equals("settings", StringComparison.OrdinalIgnoreCase))
+            {
+                ActiveTab = "Settings";
+                return;
+            }
+        }
+
+        // Intelligently default to Cart if user has items ready to purchase
+        ActiveTab = Cart.CartItems.Any() ? "Cart" : "Vault";
+    }
+
     public void Dispose() => Cart.OnChange -= StateHasChanged;
 
     private void ApplyPromo() => Cart.ApplyDiscount(PromoInput);
@@ -242,6 +273,7 @@
     private void ProcessCheckout()
     {
         Cart.Checkout();
+        // Immediately redirects to Vault after purchase so buyer can download
         ActiveTab = "Vault";
     }
 

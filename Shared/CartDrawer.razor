@@ -74,6 +74,7 @@
     private void GoToCheckout()
     {
         Cart.CloseDrawer();
-        Nav.NavigateTo("/vault");
+        // Navigates directly with ?tab=checkout query
+        Nav.NavigateTo("/vault?tab=checkout");
     }
 }
