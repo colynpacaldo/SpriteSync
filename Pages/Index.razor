@@ -1,0 +1,81 @@
+@page "/"
+@inject CartStateService Cart
+
+<div class="max-w-7xl mx-auto p-6 text-slate-100">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+        <div>
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-2">Discovery Hub</h1>
+            <p class="text-slate-400">Find the perfect 2D assets for your next indie hit.</p>
+        </div>
+        
+        <div class="flex gap-4 w-full md:w-auto shadow-lg rounded-lg">
+            <input type="text" placeholder="Search assets..." @bind="SearchQuery" @bind:event="oninput"
+                   class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 w-full md:w-64 focus:outline-none focus:border-indigo-500 transition-colors" />
+
+            <select @bind="SelectedCategory" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                <option value="All">All Categories</option>
+                <option value="Spritesheet">Spritesheets</option>
+                <option value="Tileset">Tilesets</option>
+                <option value="UI Pack">UI Packs</option>
+                <option value="SFX">Audio / SFX</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        @foreach (var asset in FilteredAssets)
+        {
+            <div class="group bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden hover:border-indigo-500 transition-all duration-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)] flex flex-col">
+                <a href="/asset/@asset.Id" class="overflow-hidden bg-[#1e1e1e] aspect-video flex items-center justify-center relative cursor-pointer">
+                    <img src="@asset.ImageUrl" alt="@asset.Name" class="transform group-hover:scale-110 transition-transform duration-500 object-cover w-full h-full opacity-90 group-hover:opacity-100" style="image-rendering: pixelated;" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-60"></div>
+                </a>
+                
+                <div class="p-5 flex flex-col flex-grow">
+                    <div class="flex justify-between items-start mb-3">
+                        <a href="/asset/@asset.Id" class="font-bold text-lg hover:text-indigo-400 transition-colors line-clamp-1">@asset.Name</a>
+                        <span class="text-emerald-400 font-black text-lg">$@asset.BasePrice</span>
+                    </div>
+                    
+                    <div class="flex gap-2 mb-6 flex-wrap">
+                        @foreach(var format in asset.Formats)
+                        {
+                            <span class="text-xs bg-slate-700/50 border border-slate-600 text-slate-300 px-2 py-1 rounded-md font-medium">@format</span>
+                        }
+                    </div>
+
+                    <div class="mt-auto">
+                        <button @onclick="() => Cart.AddToCart(asset)" 
+                                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string SearchQuery { get; set; } = "";
+    private string SelectedCategory { get; set; } = "All";
+    
+    private List<Asset> AllAssets = new();
+
+    protected override void OnInitialized()
+    {
+        // Mock Database injected for immediate visual feedback
+        AllAssets = new List<Asset>
+        {
+            new Asset { Id = 1, Name = "Cyberpunk Hero Animator", Category = "Spritesheet", BasePrice = 15.00m, Formats = new[] { ".png", ".aseprite" }, ImageUrl = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop" },
+            new Asset { Id = 2, Name = "Dark Forest Tileset", Category = "Tileset", BasePrice = 12.50m, Formats = new[] { ".png" }, ImageUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800&auto=format&fit=crop" },
+            new Asset { Id = 3, Name = "Sci-Fi HUD Kit", Category = "UI Pack", BasePrice = 20.00m, Formats = new[] { ".psd", ".png" }, ImageUrl = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop" },
+            new Asset { Id = 4, Name = "Retro 8-Bit Audio", Category = "SFX", BasePrice = 10.00m, Formats = new[] { ".wav", ".ogg" }, ImageUrl = "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=800&auto=format&fit=crop" }
+        };
+    }
+
+    private IEnumerable<Asset> FilteredAssets => AllAssets
+        .Where(a => string.IsNullOrWhiteSpace(SearchQuery) || a.Name.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))
+        .Where(a => SelectedCategory == "All" || a.Category == SelectedCategory);
+}
