@@ -2,57 +2,52 @@
 @inject CartStateService Cart
 
 <div class="max-w-7xl mx-auto p-6 text-slate-100">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
             <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-2">Discovery Hub</h1>
-            <p class="text-slate-400">Find the perfect 2D assets for your next indie hit.</p>
+            <p class="text-slate-400">Browse curated 2D sprites, tilesets, UI kits, and sound effects for indie devs.</p>
         </div>
         
-        <div class="flex gap-4 w-full md:w-auto shadow-lg rounded-lg">
-            <input type="text" placeholder="Search assets..." @bind="SearchQuery" @bind:event="oninput"
-                   class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 w-full md:w-64 focus:outline-none focus:border-indigo-500 transition-colors" />
+        <div class="relative w-full md:w-72">
+            <input type="text" placeholder="Search sprites, tilesets..." 
+                   @bind="SearchQuery" @bind:event="oninput"
+                   class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 pl-10 focus:outline-none focus:border-indigo-500 transition-colors text-sm shadow-inner" />
+            <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+    </div>
 
-            <select @bind="SelectedCategory" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer">
+    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 mb-8 flex flex-wrap gap-4 items-center justify-between shadow-lg">
+        <div class="flex flex-wrap gap-3 items-center">
+            <select @bind="SelectedCategory" @bind:after="ApplyFilters" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
                 <option value="All">All Categories</option>
                 <option value="Spritesheet">Spritesheets</option>
                 <option value="Tileset">Tilesets</option>
                 <option value="UI Pack">UI Packs</option>
-                <option value="SFX">Audio / SFX</option>
+                <option value="SFX">SFX / Audio</option>
             </select>
+
+            <select @bind="SelectedStyle" @bind:after="ApplyFilters" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                <option value="All">All Art Styles</option>
+                <option value="Pixel Art">Pixel Art</option>
+                <option value="Vector">Vector</option>
+                <option value="Hand-drawn">Hand-drawn</option>
+            </select>
+
+            <div class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
+                <span>Max: <strong class="text-emerald-400 font-mono">${MaxPrice}</strong></span>
+                <input type="range" min="5" max="50" step="5" @bind="MaxPrice" @bind:after="ApplyFilters" class="accent-indigo-500 cursor-pointer w-24" />
+            </div>
+        </div>
+
+        <div class="text-xs text-slate-400 font-mono">
+            Showing <span class="text-white font-bold">@FilteredAssets.Count()</span> assets
         </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         @foreach (var asset in FilteredAssets)
         {
-            <div class="group bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden hover:border-indigo-500 transition-all duration-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)] flex flex-col">
-                <a href="/asset/@asset.Id" class="overflow-hidden bg-[#1e1e1e] aspect-video flex items-center justify-center relative cursor-pointer">
-                    <img src="@asset.ImageUrl" alt="@asset.Name" class="transform group-hover:scale-110 transition-transform duration-500 object-cover w-full h-full opacity-90 group-hover:opacity-100" style="image-rendering: pixelated;" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-60"></div>
-                </a>
-                
-                <div class="p-5 flex flex-col flex-grow">
-                    <div class="flex justify-between items-start mb-3">
-                        <a href="/asset/@asset.Id" class="font-bold text-lg hover:text-indigo-400 transition-colors line-clamp-1">@asset.Name</a>
-                        <span class="text-emerald-400 font-black text-lg">$@asset.BasePrice</span>
-                    </div>
-                    
-                    <div class="flex gap-2 mb-6 flex-wrap">
-                        @foreach(var format in asset.Formats)
-                        {
-                            <span class="text-xs bg-slate-700/50 border border-slate-600 text-slate-300 px-2 py-1 rounded-md font-medium">@format</span>
-                        }
-                    </div>
-
-                    <div class="mt-auto">
-                        <button @onclick="() => Cart.AddToCart(asset)" 
-                                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            Add to Cart
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <AssetCard Item="asset" OnAddToCart="HandleAddToCart" />
         }
     </div>
 </div>
@@ -60,22 +55,32 @@
 @code {
     private string SearchQuery { get; set; } = "";
     private string SelectedCategory { get; set; } = "All";
+    private string SelectedStyle { get; set; } = "All";
+    private decimal MaxPrice { get; set; } = 40.00m;
     
     private List<Asset> AllAssets = new();
 
     protected override void OnInitialized()
     {
-        // Mock Database injected for immediate visual feedback
         AllAssets = new List<Asset>
         {
-            new Asset { Id = 1, Name = "Cyberpunk Hero Animator", Category = "Spritesheet", BasePrice = 15.00m, Formats = new[] { ".png", ".aseprite" }, ImageUrl = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop" },
-            new Asset { Id = 2, Name = "Dark Forest Tileset", Category = "Tileset", BasePrice = 12.50m, Formats = new[] { ".png" }, ImageUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800&auto=format&fit=crop" },
-            new Asset { Id = 3, Name = "Sci-Fi HUD Kit", Category = "UI Pack", BasePrice = 20.00m, Formats = new[] { ".psd", ".png" }, ImageUrl = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop" },
-            new Asset { Id = 4, Name = "Retro 8-Bit Audio", Category = "SFX", BasePrice = 10.00m, Formats = new[] { ".wav", ".ogg" }, ImageUrl = "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=800&auto=format&fit=crop" }
+            new Asset { Id = 1, Name = "Cyberpunk Hero Pack", Category = "Spritesheet", ArtStyle = "Pixel Art", Creator = "@PixelForge", BasePrice = 15.00m, Rating = 4.9, ReviewCount = 42, Formats = new[] { ".png", ".aseprite" }, ImageUrl = "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=600&auto=format&fit=crop" },
+            new Asset { Id = 2, Name = "Fantasy Forest Tileset", Category = "Tileset", ArtStyle = "Pixel Art", Creator = "@ForestNomad", BasePrice = 12.50m, Rating = 4.8, ReviewCount = 19, Formats = new[] { ".png", ".tsx" }, ImageUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop" },
+            new Asset { Id = 3, Name = "Sci-Fi Clean UI Kit", Category = "UI Pack", ArtStyle = "Vector", Creator = "@InterfaceLab", BasePrice = 22.00m, Rating = 5.0, ReviewCount = 11, Formats = new[] { ".svg", ".png" }, ImageUrl = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=600&auto=format&fit=crop" },
+            new Asset { Id = 4, Name = "Retro Dungeon 8-Bit SFX", Category = "SFX", ArtStyle = "Hand-drawn", Creator = "@ChiptuneWiz", BasePrice = 8.00m, Rating = 4.7, ReviewCount = 58, Formats = new[] { ".wav", ".ogg" }, ImageUrl = "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop" }
         };
     }
 
+    private void HandleAddToCart(Asset asset)
+    {
+        Cart.AddToCart(asset);
+    }
+
+    private void ApplyFilters() { }
+
     private IEnumerable<Asset> FilteredAssets => AllAssets
         .Where(a => string.IsNullOrWhiteSpace(SearchQuery) || a.Name.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))
-        .Where(a => SelectedCategory == "All" || a.Category == SelectedCategory);
+        .Where(a => SelectedCategory == "All" || a.Category == SelectedCategory)
+        .Where(a => SelectedStyle == "All" || a.ArtStyle == SelectedStyle)
+        .Where(a => a.BasePrice <= MaxPrice);
 }

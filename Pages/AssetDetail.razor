@@ -1,62 +1,103 @@
 @page "/asset/{Id:int}"
 @inject CartStateService Cart
+@implements IDisposable
 
 <div class="max-w-7xl mx-auto p-6 text-slate-100 min-h-[80vh]">
-    <a href="/" class="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors">
+    <a href="/" class="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors text-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
         Back to Market
     </a>
 
     <div class="lg:grid lg:grid-cols-12 gap-8 relative">
         <div class="lg:col-span-7 space-y-6">
-            <!-- Interactive Canvas Area -->
-            <div class="bg-slate-800 rounded-2xl border border-slate-700 aspect-video flex flex-col items-center justify-center p-4 relative overflow-hidden group">
-                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500 via-slate-900 to-slate-900"></div>
-                <div class="z-10 flex flex-col items-center gap-4">
-                    <svg class="w-16 h-16 text-slate-600 group-hover:text-indigo-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <p class="text-slate-400 font-medium">Interactive Canvas Demo Preview</p>
+            <div class="bg-slate-800 rounded-3xl border border-slate-700 p-6 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-mono uppercase tracking-widest text-indigo-400 font-bold">Live Sprite Tester</span>
+                    <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-lg border border-slate-700 text-xs">
+                        <span class="text-slate-400 text-[11px] px-1">Canvas:</span>
+                        <button @onclick='() => CanvasBg = "dark"' class="w-5 h-5 rounded bg-slate-950 border border-slate-700 @(CanvasBg == "dark" ? "ring-2 ring-indigo-500" : "")"></button>
+                        <button @onclick='() => CanvasBg = "light"' class="w-5 h-5 rounded bg-slate-200 border border-slate-400 @(CanvasBg == "light" ? "ring-2 ring-indigo-500" : "")"></button>
+                        <button @onclick='() => CanvasBg = "checkered"' class="w-5 h-5 rounded bg-checkered border border-slate-600 @(CanvasBg == "checkered" ? "ring-2 ring-indigo-500" : "")" title="Checkerboard"></button>
+                    </div>
+                </div>
+
+                <div class="aspect-video rounded-2xl flex flex-col items-center justify-center relative overflow-hidden border border-slate-700/80 transition-colors duration-300 @(CanvasBg == "dark" ? "bg-slate-950" : CanvasBg == "light" ? "bg-slate-100" : "bg-checkered")">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-24 h-24 bg-indigo-500/10 border-2 border-indigo-400/30 rounded-xl flex items-center justify-center text-4xl shadow-2xl relative" style="image-rendering: pixelated;">
+                            @if (CurrentAnimation == "Idle") { <span>🧙‍♂️</span> }
+                            else if (CurrentAnimation == "Run") { <span>🏃‍♂️</span> }
+                            else { <span>⚔️</span> }
+                            
+                            <span class="absolute bottom-1 right-2 text-[10px] font-mono text-indigo-300">F:@CurrentFrame/4</span>
+                        </div>
+                        <span class="text-xs font-mono px-3 py-1 rounded-full @(CanvasBg == "light" ? "bg-slate-300 text-slate-800" : "bg-slate-900/80 text-slate-300 border border-slate-700")">
+                            State: <strong class="text-indigo-400">@CurrentAnimation</strong> (16x16 scaled 4x)
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mt-4 bg-slate-900/80 border border-slate-700/80 p-4 rounded-2xl flex flex-wrap gap-4 items-center justify-between">
+                    <div class="flex gap-2">
+                        @foreach (var state in new[] { "Idle", "Run", "Attack" })
+                        {
+                            <button @onclick="() => SetAnimation(state)" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all @(CurrentAnimation == state ? "bg-indigo-600 text-white shadow-md" : "bg-slate-800 text-slate-400 hover:text-white")">
+                                @state
+                            </button>
+                        }
+                    </div>
+
+                    <div class="flex items-center gap-3 text-xs">
+                        <button @onclick="TogglePlay" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200">
+                            @if (IsPlaying) { <span>⏸ Pause</span> } else { <span>▶ Play</span> }
+                        </button>
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-400 font-mono">@Fps FPS</span>
+                            <input type="range" min="1" max="24" @bind="Fps" @bind:event="oninput" class="w-24 accent-indigo-500 cursor-pointer" />
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
-                <h3 class="text-2xl font-bold mb-4">Package Contents</h3>
-                <ul class="list-disc list-inside text-slate-400 space-y-2">
-                    <li>32x32px Character Sprites</li>
-                    <li>Source .aseprite files included</li>
-                    <li>24 Animation states (Idle, Run, Jump, Attack)</li>
-                    <li>Optimized spritesheets ready for Unity & Godot</li>
-                </ul>
+            <div class="bg-slate-800 p-6 rounded-3xl border border-slate-700 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60"><div class="text-slate-400 text-xs">Dimensions</div><div class="text-white font-bold font-mono mt-1">32x32 px</div></div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60"><div class="text-slate-400 text-xs">Frames</div><div class="text-white font-bold font-mono mt-1">24 Total</div></div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60"><div class="text-slate-400 text-xs">Format</div><div class="text-white font-bold font-mono mt-1">PNG + Aseprite</div></div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60"><div class="text-slate-400 text-xs">Engine Support</div><div class="text-emerald-400 font-bold font-mono mt-1">Unity / Godot</div></div>
             </div>
         </div>
 
-        <div class="lg:col-span-5 relative mt-8 lg:mt-0">
-            <div class="sticky top-24 bg-slate-900/80 backdrop-blur-xl border border-slate-700 p-8 rounded-3xl shadow-2xl">
+        <div class="lg:col-span-5 relative">
+            <div class="sticky top-24 bg-slate-900/90 backdrop-blur-xl border border-slate-800 p-7 rounded-3xl shadow-2xl">
                 <div class="flex justify-between items-start mb-2">
                     <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Asset Pack #@Id</h1>
                 </div>
-                <p class="text-slate-400 mb-8 border-b border-slate-800 pb-4">By PixelForge Studio</p>
+                <p class="text-slate-400 mb-6 text-sm border-b border-slate-800 pb-4">By <span class="text-indigo-400 font-medium">@CurrentAsset.Creator</span> • v1.2</p>
 
-                <div class="space-y-4 mb-8">
+                <div class="space-y-4 mb-6">
                     <div @onclick="() => SelectLicense(false)" class="cursor-pointer p-5 rounded-2xl border-2 transition-all duration-200 @(!IsCommercial ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.15)]" : "border-slate-800 bg-slate-800/50 hover:border-slate-600")">
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-xl text-white">Personal</span>
-                            <span class="text-xl font-black text-white">$15.00</span>
-                        </div>
-                        <p class="text-sm text-slate-400 mt-2">For non-commercial indie projects and learning.</p>
+                        <div class="flex justify-between items-center"><span class="font-bold text-lg text-white">Personal License</span><span class="text-lg font-black text-emerald-400">$@BasePrice</span></div>
+                        <p class="text-xs text-slate-400 mt-1">For single non-commercial indie game project.</p>
                     </div>
 
                     <div @onclick="() => SelectLicense(true)" class="cursor-pointer p-5 rounded-2xl border-2 transition-all duration-200 @(IsCommercial ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.15)]" : "border-slate-800 bg-slate-800/50 hover:border-slate-600")">
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-xl @(IsCommercial ? "text-indigo-400" : "text-white")">Commercial</span>
-                            <span class="text-xl font-black @(IsCommercial ? "text-indigo-400" : "text-white")">$45.00</span>
-                        </div>
-                        <p class="text-sm text-slate-400 mt-2">Unlimited commercial usage & modifiable source files.</p>
+                        <div class="flex justify-between items-center"><span class="font-bold text-lg @(IsCommercial ? "text-indigo-400" : "text-white")">Commercial Unlimited</span><span class="text-lg font-black text-emerald-400">$@(BasePrice * 3)</span></div>
+                        <p class="text-xs text-slate-400 mt-1">Unlimited commercial titles, Steam release + source .aseprite files.</p>
                     </div>
                 </div>
 
-                <button @onclick="AddToCart" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg py-4 rounded-2xl shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all active:scale-95 flex justify-center items-center gap-3">
-                    Add to Cart - $@(CurrentPrice)
-                </button>
+                @if (Cart.IsInCart(Id))
+                {
+                    <button @onclick="() => Cart.ToggleDrawer()" class="w-full bg-emerald-500/20 border-2 border-emerald-500 hover:bg-emerald-500/30 text-emerald-400 font-black text-base py-4 rounded-2xl transition-all shadow-lg flex justify-center items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        In Cart • Open Drawer ($@CurrentPrice)
+                    </button>
+                }
+                else
+                {
+                    <button @onclick="AddToCart" class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black text-base py-4 rounded-2xl shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all flex justify-center items-center gap-2">
+                        Add to Cart - $@(CurrentPrice)
+                    </button>
+                }
             </div>
         </div>
     </div>
@@ -65,15 +106,60 @@
 @code {
     [Parameter] public int Id { get; set; }
     
+    private Asset CurrentAsset = new();
     private bool IsCommercial { get; set; } = false;
     private decimal BasePrice = 15.00m;
     private decimal CurrentPrice => IsCommercial ? BasePrice * 3 : BasePrice;
+    private string CanvasBg = "dark";
+    private string CurrentAnimation = "Idle";
+    private int CurrentFrame = 1;
+    private int Fps = 8;
+    private bool IsPlaying = true;
+    private CancellationTokenSource? _cts;
+
+    protected override void OnInitialized()
+    {
+        CurrentAsset = new Asset { Id = Id, Name = $"Hero Sprite Pack #{Id}", Category = "Spritesheet", BasePrice = BasePrice, Creator = "@PixelForge" };
+        StartAnimationLoop();
+    }
+
+    private void StartAnimationLoop()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        _ = RunLoop(_cts.Token);
+    }
+
+    private async Task RunLoop(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            var delay = Math.Max(20, 1000 / Math.Max(1, Fps));
+            try
+            {
+                await Task.Delay(delay, token);
+                if (IsPlaying)
+                {
+                    CurrentFrame = (CurrentFrame % 4) + 1;
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (TaskCanceledException) { break; }
+        }
+    }
 
     private void SelectLicense(bool commercial) => IsCommercial = commercial;
+    private void SetAnimation(string anim) { CurrentAnimation = anim; CurrentFrame = 1; }
+    private void TogglePlay() => IsPlaying = !IsPlaying;
 
     private void AddToCart()
     {
-        var dummyAsset = new Asset { Id = this.Id, Name = $"Asset Pack #{Id} ({(IsCommercial ? "Commercial" : "Personal")})", BasePrice = CurrentPrice };
-        Cart.AddToCart(dummyAsset);
+        Cart.AddToCart(CurrentAsset, IsCommercial ? "Commercial" : "Personal", CurrentPrice);
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
     }
 }

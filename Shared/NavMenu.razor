@@ -10,15 +10,16 @@
             <a href="/" class="text-slate-300 hover:text-indigo-400 transition-colors">Market</a>
             <a href="/vault" class="text-slate-300 hover:text-indigo-400 transition-colors">My Vault</a>
             
-            <a href="/vault" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl flex items-center gap-3 transition-colors shadow-sm">
+            <button @onclick="() => Cart.ToggleDrawer()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-xl flex items-center gap-2.5 transition-all active:scale-95 shadow-sm text-slate-200">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                 <span class="text-sm">Cart</span>
                 @if (Cart.CartItems.Any())
                 {
-                    <span class="bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                    <span class="bg-indigo-500 text-white text-xs font-black px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]">
                         @Cart.CartItems.Count
                     </span>
                 }
-            </a>
+            </button>
         </div>
     </div>
 </nav>
