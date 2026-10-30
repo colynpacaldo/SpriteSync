@@ -1,85 +1,109 @@
-@inject CartStateService Cart
+@inherits CartAwareComponent
 
-<div class="group bg-slate-900/90 rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden relative shadow-md hover:shadow-2xl @(IsInCart ? "border-emerald-500/50 ring-1 ring-emerald-500/20" : "border-slate-800 hover:border-slate-700")">
-    
+<div class="group bg-slate-900/90 rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden relative shadow-md hover:shadow-2xl motion-reduce:transform-none focus-within:ring-2 focus-within:ring-indigo-500 @(IsOwned ? "border-indigo-500/40" : IsInCart ? "border-emerald-500/50 ring-1 ring-emerald-500/20" : "border-slate-800 hover:border-slate-700")">
+
     <!-- Badges Row -->
-    <div class="absolute top-3 inset-x-3 z-20 flex justify-between items-center pointer-events-none">
+    <div class="absolute top-3 inset-x-3 z-20 flex justify-between items-center pointer-events-none text-xs">
         <div class="flex gap-1.5">
             @if (Item.IsStaffPick)
             {
-                <span class="bg-amber-500/90 text-slate-950 font-black text-[10px] tracking-wider px-2 py-0.5 rounded-full uppercase shadow">STAFF PICK</span>
+                <span class="bg-amber-500/90 text-slate-950 font-black text-xs tracking-wider px-2 py-0.5 rounded-full uppercase shadow">STAFF PICK</span>
             }
-            <span class="bg-slate-950/80 backdrop-blur-md text-indigo-300 border border-slate-700/60 font-semibold text-[10px] px-2 py-0.5 rounded-full">@Item.ArtStyle</span>
+            <span class="bg-slate-950/80 backdrop-blur-md text-indigo-300 border border-slate-700/60 font-semibold text-xs px-2 py-0.5 rounded-full">@Item.ArtStyle</span>
         </div>
 
-        @if (IsInCart)
+        @if (IsOwned)
         {
-            <div class="bg-emerald-500 text-slate-950 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full shadow flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            <span class="bg-indigo-500 text-white font-extrabold text-xs px-2.5 py-0.5 rounded-full shadow flex items-center gap-1">
+                <span>✓</span> OWNED @(OwnedTier == "Commercial" ? "(COMMERCIAL)" : "(PERSONAL)")
+            </span>
+        }
+        else if (IsInCart)
+        {
+            <div class="bg-emerald-500 text-slate-950 font-extrabold text-xs px-2.5 py-0.5 rounded-full shadow flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                 IN CART
             </div>
         }
     </div>
 
     <!-- Thumbnail View -->
-    <a href="/asset/@Item.Id" class="overflow-hidden bg-[#0d131f] aspect-video flex items-center justify-center relative cursor-pointer group-hover:brightness-105 transition-all">
-        <img src="@Item.ImageUrl" alt="@Item.Name" 
-             class="transform group-hover:scale-105 transition-transform duration-300 object-cover w-full h-full opacity-85 group-hover:opacity-100" 
+    <a href="/asset/@Item.Id"
+       class="overflow-hidden bg-[#0d131f] aspect-video flex items-center justify-center relative cursor-pointer group-hover:brightness-105 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+       aria-label="View @Item.Name details">
+        <img src="@Item.ImageUrl" alt="Visual representation of @Item.Name @Item.Category"
+             loading="lazy"
+             class="transform group-hover:scale-105 transition-transform duration-300 object-cover w-full h-full opacity-90 group-hover:opacity-100"
              style="image-rendering: pixelated;" />
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
-        
-        <!-- Quick Specs Ribbon on image bottom -->
-        <div class="absolute bottom-2 left-3 right-3 flex justify-between items-center text-[11px] text-slate-300 font-mono">
+
+        <div class="absolute bottom-2 left-3 right-3 flex justify-between items-center text-xs text-slate-300 font-mono">
             <span class="bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-800">@Item.Dimensions</span>
-            <span class="bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-800">@Item.FrameCount Frames</span>
+            <span class="bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-800">@FrameLabel</span>
         </div>
     </a>
-    
+
     <!-- Body Info -->
     <div class="p-4 flex flex-col flex-grow">
         <div class="flex justify-between items-baseline mb-1">
-            <a href="/asset/@Item.Id" class="font-bold text-base text-slate-100 hover:text-indigo-400 transition-colors line-clamp-1">@Item.Name</a>
-            <span class="text-emerald-400 font-extrabold text-base ml-2">${@Item.BasePrice}</span>
+            <a href="/asset/@Item.Id" class="font-bold text-base text-slate-100 hover:text-indigo-400 transition-colors line-clamp-1 focus:outline-none focus-visible:underline">@Item.Name</a>
+            <span class="text-emerald-400 font-extrabold text-base ml-2">@Money.Format(Item.BasePrice)</span>
         </div>
-        
-        <div class="flex items-center gap-2 mb-3 text-xs text-slate-400">
+
+        <div class="flex items-center gap-2 mb-3 text-xs text-slate-300">
             <span class="flex items-center gap-1 text-slate-300">
-                <span>@Item.CreatorAvatar</span>
+                <span aria-hidden="true">@Item.CreatorAvatar</span>
                 <span>@Item.Creator</span>
             </span>
             <span>•</span>
             <span class="text-amber-400 font-medium flex items-center gap-0.5">
-                ★ @Item.Rating <span class="text-slate-500">(@Item.ReviewCount)</span>
+                ★ @Item.Rating <span class="text-slate-400">(@Item.ReviewCount)</span>
             </span>
+            <span>•</span>
+            <span class="text-slate-400">↓ @DownloadsLabel</span>
         </div>
-        
+
         <!-- Formats & Engine tags -->
         <div class="flex gap-1 mb-4 flex-wrap">
-            @foreach(var format in Item.Formats)
+            @foreach (var format in Item.Formats)
             {
-                <span class="text-[10px] bg-slate-800 border border-slate-700/60 text-slate-400 px-1.5 py-0.5 rounded font-mono">@format</span>
+                <span class="text-xs bg-slate-800 border border-slate-700/60 text-slate-300 px-1.5 py-0.5 rounded font-mono">@format</span>
             }
-            @foreach(var engine in Item.CompatibleEngines)
+            @foreach (var engine in Item.CompatibleEngines)
             {
-                <span class="text-[10px] bg-indigo-950/40 border border-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-sans">@engine</span>
+                <span class="text-xs bg-indigo-950/40 border border-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-sans">@engine</span>
             }
         </div>
 
         <!-- CTA Button -->
         <div class="mt-auto">
-            @if (IsInCart)
+            @if (IsOwned && OwnedTier == "Commercial")
             {
-                <button @onclick="() => Cart.ToggleDrawer()" 
-                        class="w-full bg-emerald-500/10 border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-400 font-bold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
-                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <a href="/vault?tab=vault"
+                   class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs transition-all border border-slate-700 flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                    <span>🔒</span> In Your Vault
+                </a>
+            }
+            else if (IsOwned && OwnedTier == "Personal")
+            {
+                <a href="/asset/@Item.Id"
+                   class="w-full bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-bold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                    Upgrade to Commercial
+                </a>
+            }
+            else if (IsInCart)
+            {
+                <button type="button" @onclick="() => Cart.ToggleDrawer()"
+                        class="w-full bg-emerald-500/10 border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-400 font-bold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                     Added • Open Cart
                 </button>
             }
             else
             {
-                <button @onclick="() => OnAddToCart.InvokeAsync(Item)" 
-                        class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-2 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <button type="button" @onclick="() => OnAddToCart.InvokeAsync(Item)"
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-2 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Add to Cart
                 </button>
             }
@@ -92,4 +116,8 @@
     [Parameter] public EventCallback<Asset> OnAddToCart { get; set; }
 
     private bool IsInCart => Cart.IsInCart(Item.Id);
+    private bool IsOwned => Cart.IsOwned(Item.Id);
+    private string? OwnedTier => Cart.GetOwnedLicenseTier(Item.Id);
+    private string FrameLabel => Item.Category == "SFX" ? $"{Item.FrameCount} Samples" : $"{Item.FrameCount} Frames";
+    private string DownloadsLabel => Item.Downloads.ToString("N0");
 }

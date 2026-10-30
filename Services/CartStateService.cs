@@ -18,6 +18,7 @@ public class CartStateService
         VaultItems.Add(new VaultItem
         {
             Id = 101,
+            AssetId = 1,
             AssetName = "Cyberpunk Hero Pack",
             Category = "Spritesheet",
             LicenseTier = "Commercial",
@@ -31,6 +32,7 @@ public class CartStateService
         VaultItems.Add(new VaultItem
         {
             Id = 102,
+            AssetId = 2,
             AssetName = "Dark Forest 16x16 Tileset",
             Category = "Tileset",
             LicenseTier = "Personal",
@@ -43,9 +45,19 @@ public class CartStateService
     }
 
     public bool IsInCart(int assetId) => CartItems.Any(ci => ci.Asset.Id == assetId);
+    public bool IsOwned(int assetId) => VaultItems.Any(v => v.AssetId == assetId);
+
+    public string? GetOwnedLicenseTier(int assetId)
+    {
+        var owned = VaultItems.Where(v => v.AssetId == assetId).ToList();
+        if (owned.Count == 0) return null;
+        return owned.Any(v => v.LicenseTier == "Commercial") ? "Commercial" : "Personal";
+    }
 
     public void AddToCart(Asset asset, string licenseTier = "Personal", decimal price = 0)
     {
+        if (GetOwnedLicenseTier(asset.Id) == "Commercial") return; // already fully licensed
+
         if (price <= 0)
         {
             price = licenseTier == "Commercial" ? asset.BasePrice * 3 : asset.BasePrice;
@@ -125,9 +137,13 @@ public class CartStateService
     {
         foreach (var item in CartItems)
         {
+            // A Personal -> Commercial upgrade replaces the existing vault entry instead of duplicating it
+            var upgraded = VaultItems.RemoveAll(v => v.AssetId == item.Asset.Id) > 0;
+
             VaultItems.Insert(0, new VaultItem
             {
                 Id = item.Asset.Id,
+                AssetId = item.Asset.Id,
                 AssetName = item.Asset.Name,
                 Category = item.Asset.Category,
                 LicenseTier = item.LicenseTier,
@@ -137,7 +153,7 @@ public class CartStateService
                 FileSize = $"{Random.Shared.Next(8, 38)}.{Random.Shared.Next(1, 9)} MB",
                 PurchaseDate = DateTime.Now
             });
-            User.AssetsOwned++;
+            if (!upgraded) User.AssetsOwned++;
             User.TotalSpent += item.Price;
         }
         ClearCart();

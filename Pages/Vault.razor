@@ -1,12 +1,17 @@
 @page "/vault"
-@inject CartStateService Cart
+@inherits CartAwareComponent
+@inject ToastService Toast
+@inject AssetService Assets
+@inject IJSRuntime JS
+
+<PageTitle>My Vault | SpriteSync</PageTitle>
 
 <div class="max-w-6xl mx-auto px-6 py-6 text-slate-100 min-h-[85vh]">
-    
+
     <!-- User Profile Header Card -->
     <div class="bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-3xl shadow-inner">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-3xl shadow-inner" aria-hidden="true">
                 @Cart.User.Avatar
             </div>
             <div>
@@ -14,149 +19,234 @@
                     <h1 class="text-xl font-black text-white">@Cart.User.Username</h1>
                     <span class="text-xs text-indigo-400 font-mono">@Cart.User.Handle</span>
                 </div>
-                <p class="text-xs text-slate-400 mt-1 max-w-md">@Cart.User.Bio</p>
+                <p class="text-xs text-slate-300 mt-1 max-w-md">@Cart.User.Bio</p>
             </div>
         </div>
 
         <div class="flex gap-4 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6 text-xs">
             <div>
-                <div class="text-slate-500">Engine</div>
+                <div class="text-slate-400">Engine</div>
                 <div class="text-white font-mono font-bold mt-0.5">@Cart.User.PreferredEngine</div>
             </div>
             <div>
-                <div class="text-slate-500">Purchases</div>
-                <div class="text-white font-mono font-bold mt-0.5">@Cart.User.AssetsOwned items</div>
+                <div class="text-slate-400">Purchases</div>
+                <div class="text-white font-mono font-bold mt-0.5">@Cart.User.AssetsOwned @(Cart.User.AssetsOwned == 1 ? "item" : "items")</div>
             </div>
             <div>
-                <div class="text-slate-500">Invested</div>
-                <div class="text-emerald-400 font-mono font-bold mt-0.5">${@Cart.User.TotalSpent}</div>
+                <div class="text-slate-400">Invested</div>
+                <div class="text-emerald-400 font-mono font-bold mt-0.5">@Money.Format(Cart.User.TotalSpent)</div>
             </div>
         </div>
     </div>
 
     <!-- Navigation Tabs -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div class="flex p-1 bg-slate-900 border border-slate-800 rounded-xl">
-            <button @onclick='() => ActiveTab = "Cart"' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Cart" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
+        <div class="flex p-1 bg-slate-900 border border-slate-800 rounded-xl" role="tablist">
+            <button type="button" role="tab" aria-selected="@(ActiveTab == "Cart" ? "true" : "false")" @onclick='() => SwitchTab("Cart")' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Cart" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
                 Active Checkout (@Cart.CartItems.Count)
             </button>
-            <button @onclick='() => ActiveTab = "Vault"' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Vault" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
+            <button type="button" role="tab" aria-selected="@(ActiveTab == "Vault" ? "true" : "false")" @onclick='() => SwitchTab("Vault")' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Vault" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
                 My Vault (@Cart.VaultItems.Count)
             </button>
-            <button @onclick='() => ActiveTab = "Settings"' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Settings" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
-                Developer Profile & Settings
+            <button type="button" role="tab" aria-selected="@(ActiveTab == "Settings" ? "true" : "false")" @onclick='() => SwitchTab("Settings")' class="px-5 py-2 rounded-lg font-bold text-xs transition-all @(ActiveTab == "Settings" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-white")">
+                Developer Profile &amp; Settings
             </button>
         </div>
 
-        <button @onclick="() => ShowUploadModal = true" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 text-indigo-300 transition-colors shadow">
+        <button type="button" @onclick="() => ShowUploadModal = true" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 text-indigo-300 transition-colors shadow">
             <span>+</span> Upload Pack as Creator
         </button>
     </div>
 
     @if (ActiveTab == "Cart")
     {
-        <!-- Checkout Flow -->
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-white">Review & Checkout</h2>
-            
-            @if(Cart.CartItems.Any())
+        <div class="space-y-6">
+            <!-- Step Indicator -->
+            <div class="flex items-center gap-3 text-xs font-mono font-bold text-slate-400 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
+                <span class="px-2.5 py-1 rounded-lg @(CheckoutStep == 1 ? "bg-indigo-600 text-white" : "text-slate-400")">1. Cart Items</span>
+                <span aria-hidden="true">→</span>
+                <span class="px-2.5 py-1 rounded-lg @(CheckoutStep == 2 ? "bg-indigo-600 text-white" : "text-slate-400")">2. Details &amp; Auth</span>
+                <span aria-hidden="true">→</span>
+                <span class="px-2.5 py-1 rounded-lg @(CheckoutStep == 3 ? "bg-indigo-600 text-white" : "text-slate-400")">3. Complete</span>
+            </div>
+
+            @if (CheckoutStep == 3)
             {
-                <EditForm Model="CheckoutModel" OnValidSubmit="ProcessCheckout">
-                    <DataAnnotationsValidator />
-                    
-                    <div class="space-y-3 mb-6">
-                        @foreach(var item in Cart.CartItems)
-                        {
-                            <div class="flex justify-between items-center bg-slate-950 border border-slate-800 p-4 rounded-xl">
-                                <div>
-                                    <div class="font-bold text-white text-sm">@item.Asset.Name</div>
-                                    <span class="text-xs text-indigo-400 uppercase font-mono">@item.LicenseTier License</span>
-                                </div>
-                                <span class="text-emerald-400 font-extrabold text-base">${@item.Price}</span>
-                            </div>
-                        }
-                    </div>
-
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 flex gap-3">
-                        <input type="text" placeholder="Promo / Student discount (try INDIE20)" @bind="PromoInput" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs flex-1 focus:border-indigo-500 outline-none" />
-                        <button type="button" @onclick="ApplyPromo" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-xs font-bold">Apply</button>
-                    </div>
-
-                    @if (Cart.DiscountPercent > 0)
-                    {
-                        <div class="text-xs text-emerald-400 font-mono mb-4">Discount: @(Cart.DiscountPercent * 100)% off applied!</div>
-                    }
-
-                    <div class="flex justify-between items-center p-4 border-t border-slate-800 mb-6">
-                        <span class="text-slate-400 text-sm">Order Total</span>
-                        <span class="text-2xl font-black text-white">${@Cart.Total}</span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <div class="w-full">
-                            <InputText @bind-Value="CheckoutModel.Email" placeholder="Developer receipt email address..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 focus:border-indigo-500 outline-none text-xs" />
-                            <ValidationMessage For="@(() => CheckoutModel.Email)" class="text-rose-400 text-xs mt-1" />
-                        </div>
-                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-8 py-3 rounded-xl font-black text-sm whitespace-nowrap transition-all shadow-lg active:scale-95">
-                            Authorize & Add to Vault
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-4 shadow-2xl">
+                    <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full flex items-center justify-center text-3xl mx-auto" aria-hidden="true">✓</div>
+                    <h2 class="text-2xl font-black text-white">Order Authorized Successfully!</h2>
+                    <p class="text-xs text-slate-300">Order ID: <strong class="font-mono text-indigo-400">@CompletedOrderId</strong> • Receipt dispatched to developer email.</p>
+                    <div class="pt-4 flex justify-center gap-3">
+                        <button type="button" @onclick='() => SwitchTab("Vault")' class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md">
+                            Go to My Vault
                         </button>
                     </div>
-                </EditForm>
+                </div>
+            }
+            else if (Cart.CartItems.Any())
+            {
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                            <h2 class="text-base font-bold text-white mb-4">Review Order Items</h2>
+                            <div class="space-y-3">
+                                @foreach (var item in Cart.CartItems)
+                                {
+                                    <div class="flex justify-between items-center bg-slate-950 border border-slate-800 p-4 rounded-xl gap-3">
+                                        <div>
+                                            <div class="font-bold text-white text-sm">@item.Asset.Name</div>
+                                            <span class="text-xs text-indigo-400 uppercase font-mono">@item.LicenseTier License</span>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-emerald-400 font-extrabold text-base">@Money.Format(item.Price)</span>
+                                            <button type="button" @onclick="() => Cart.RemoveFromCart(item.Asset.Id)" class="text-slate-400 hover:text-rose-400 text-xs" aria-label="Remove @item.Asset.Name from cart">✕</button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                            <h2 class="text-base font-bold text-white mb-4">Developer Delivery</h2>
+                            <EditForm Model="CheckoutModel" OnValidSubmit="ProcessCheckout">
+                                <DataAnnotationsValidator />
+                                <div class="space-y-3 text-xs">
+                                    <div>
+                                        <label for="checkout-email" class="block text-slate-400 mb-1">Receipt Email</label>
+                                        <InputText id="checkout-email" @bind-Value="CheckoutModel.Email" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" />
+                                        <ValidationMessage For="@(() => CheckoutModel.Email)" class="text-rose-400 text-xs mt-1" />
+                                    </div>
+                                    <div class="pt-2">
+                                        <button type="submit" disabled="@IsProcessing" class="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-black py-3 rounded-xl text-sm transition-all shadow-lg active:scale-95">
+                                            @(IsProcessing ? "Authorizing with Vault..." : $"Authorize & Add to Vault • {Money.Format(Cart.Total)}")
+                                        </button>
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5">
+                        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sticky top-20 shadow-xl space-y-4 text-xs">
+                            <h2 class="font-bold text-white uppercase tracking-wider text-xs border-b border-slate-800 pb-3">Order Summary</h2>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-slate-300">
+                                    <span>Subtotal (@Cart.CartItems.Count @(Cart.CartItems.Count == 1 ? "item" : "items"))</span>
+                                    <span class="font-mono text-white">@Money.Format(Cart.Subtotal)</span>
+                                </div>
+                                @if (Cart.DiscountPercent > 0)
+                                {
+                                    <div class="flex justify-between text-emerald-400">
+                                        <span>Discount (@((int)(Cart.DiscountPercent * 100))% off)</span>
+                                        <span class="font-mono">-@Money.Format(Cart.DiscountAmount)</span>
+                                    </div>
+                                }
+                                <div class="flex justify-between font-bold text-white border-t border-slate-800 pt-3 text-base">
+                                    <span>Total Due</span>
+                                    <span class="text-emerald-400">@Money.Format(Cart.Total)</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2">
+                                <div class="flex gap-2">
+                                    <input type="text" placeholder="Promo code (e.g. INDIE20)" aria-label="Promo code" @bind="PromoInput" @bind:event="oninput" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white uppercase outline-none focus:border-indigo-500" />
+                                    <button type="button" @onclick="ApplyPromo" class="bg-slate-800 hover:bg-slate-700 px-3.5 py-2 rounded-lg text-xs font-bold text-white">Apply</button>
+                                </div>
+                                @if (!string.IsNullOrEmpty(PromoFeedback))
+                                {
+                                    <div class="mt-2 text-xs font-semibold @(PromoIsSuccess ? "text-emerald-400" : "text-rose-400")" role="alert">
+                                        @PromoFeedback
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
             }
             else
             {
-                <div class="text-center py-16 text-slate-500">Your cart is currently empty.</div>
+                <div class="text-center py-20 bg-slate-900 border border-slate-800 rounded-3xl">
+                    <div class="text-3xl mb-2" aria-hidden="true">🛒</div>
+                    <p class="text-slate-400 text-sm font-semibold mb-4">Your checkout is currently empty.</p>
+                    <a href="/" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow">Browse Marketplace</a>
+                </div>
             }
         </div>
     }
     else if (ActiveTab == "Vault")
     {
-        <!-- Purchased Assets Library -->
         <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-            <div class="p-5 border-b border-slate-800 flex justify-between items-center">
-                <h2 class="text-sm font-bold text-white uppercase tracking-wider">Purchased Library & License Keys</h2>
-                <span class="text-xs text-slate-500">Auto-synced with Git LFS & itch library</span>
+            <div class="p-5 border-b border-slate-800 flex flex-wrap gap-4 justify-between items-center">
+                <div>
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Purchased Library &amp; License Keys</h2>
+                    <span class="text-xs text-slate-400">Instant offline activation keys • Source repository checksums</span>
+                </div>
+
+                <div class="flex gap-2 text-xs">
+                    <input type="text" placeholder="Filter vault..." aria-label="Filter vault" @bind="VaultSearch" @bind:event="oninput" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white" />
+                    <select @bind="VaultFilterTier" aria-label="Filter by license" class="bg-slate-950 border border-slate-800 rounded-lg px-2 text-white">
+                        <option value="All">All Licenses</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Commercial">Commercial</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="overflow-x-auto">
+            @if (!FilteredVaultItems.Any())
+            {
+                <div class="p-10 text-center text-xs text-slate-400">No vault items match your filter.</div>
+            }
+
+            <!-- Desktop Table -->
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-950/60 text-slate-400">
                         <tr>
                             <th class="px-6 py-3 font-semibold">Asset Name</th>
-                            <th class="px-6 py-3 font-semibold">License</th>
+                            <th class="px-6 py-3 font-semibold">License Tier</th>
                             <th class="px-6 py-3 font-semibold">Version Notes</th>
                             <th class="px-6 py-3 font-semibold">Size</th>
                             <th class="px-6 py-3 font-semibold text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800/60">
-                        @foreach(var item in Cart.VaultItems)
+                        @foreach (var item in FilteredVaultItems)
                         {
+                            var hasUpdate = CheckUpdateAvailable(item);
                             <tr class="hover:bg-slate-800/30 transition-colors">
                                 <td class="px-6 py-4">
                                     <div class="font-bold text-white text-sm">@item.AssetName</div>
-                                    <div class="text-[11px] font-mono text-slate-500 mt-0.5">Key: <span class="text-indigo-400 select-all">@item.LicenseKey</span></div>
+                                    <div class="text-xs font-mono text-slate-400 mt-0.5 flex items-center gap-1.5">
+                                        <span>Key:</span>
+                                        <span class="text-indigo-400">@(RevealedKeys.Contains(item.Id) ? item.LicenseKey : "••••-••••-••••-••••")</span>
+                                        <button type="button" @onclick="() => ToggleKeyReveal(item.Id)" class="text-slate-400 hover:text-white" title="Toggle Visibility" aria-label="Toggle key visibility">👁</button>
+                                        <button type="button" @onclick="() => CopyKey(item.LicenseKey)" class="text-slate-400 hover:text-white" title="Copy Key" aria-label="Copy license key">📋</button>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                        @item.LicenseTier
-                                    </span>
+                                    <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">@item.LicenseTier</span>
                                 </td>
-                                <td class="px-6 py-4 text-slate-400">
-                                    <div>@item.Version</div>
-                                    <div class="text-[11px] text-slate-500">@item.VersionNotes</div>
+                                <td class="px-6 py-4 text-slate-300">
+                                    <div class="flex items-center gap-2">
+                                        <span>@item.Version</span>
+                                        @if (hasUpdate)
+                                        {
+                                            <span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs px-2 py-0.5 rounded-full font-bold">Update Available</span>
+                                        }
+                                    </div>
+                                    <div class="text-xs text-slate-400">@item.VersionNotes</div>
                                 </td>
-                                <td class="px-6 py-4 font-mono text-slate-400">@item.FileSize</td>
+                                <td class="px-6 py-4 font-mono text-slate-300">@item.FileSize</td>
                                 <td class="px-6 py-4 text-right">
                                     @if (item.IsDownloading)
                                     {
-                                        <div class="w-28 ml-auto bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                                        <div class="w-28 ml-auto bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@item.DownloadProgress">
                                             <div class="bg-indigo-500 h-full transition-all duration-300" style="width: @(item.DownloadProgress)%"></div>
                                         </div>
                                     }
                                     else
                                     {
-                                        <button @onclick="() => SimulateDownload(item)" 
+                                        <button type="button" @onclick="() => SimulateDownload(item)"
                                                 class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow inline-flex items-center gap-1.5">
                                             <span>⬇</span> @(item.IsDownloaded ? "Re-download" : "Download .ZIP")
                                         </button>
@@ -167,137 +257,255 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Mobile Cards -->
+            <div class="md:hidden p-4 space-y-4">
+                @foreach (var item in FilteredVaultItems)
+                {
+                    <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                        <div class="flex justify-between items-start">
+                            <div class="font-bold text-white text-sm">@item.AssetName</div>
+                            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">@item.LicenseTier</span>
+                        </div>
+                        <div class="text-slate-400">Version: @item.Version • @item.FileSize @(CheckUpdateAvailable(item) ? "• Update available" : "")</div>
+                        <div class="font-mono text-indigo-400 bg-slate-900 p-2 rounded-lg break-all">
+                            Key: @(RevealedKeys.Contains(item.Id) ? item.LicenseKey : "••••-••••-••••-••••")
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="button" @onclick="() => ToggleKeyReveal(item.Id)" class="flex-1 bg-slate-800 py-1.5 rounded-lg font-bold">@(RevealedKeys.Contains(item.Id) ? "Hide Key" : "Reveal Key")</button>
+                            <button type="button" @onclick="() => CopyKey(item.LicenseKey)" class="flex-1 bg-slate-800 py-1.5 rounded-lg font-bold">Copy Key</button>
+                            <button type="button" disabled="@item.IsDownloading" @onclick="() => SimulateDownload(item)" class="flex-1 bg-indigo-600 py-1.5 rounded-lg font-bold text-white">@(item.IsDownloading ? $"{item.DownloadProgress}%" : "Download")</button>
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     }
     else if (ActiveTab == "Settings")
     {
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
-            <h2 class="text-base font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3">Developer Engine Preferences</h2>
-            
+        <form @onsubmit="SaveSettings" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
+            <h2 class="text-base font-bold text-white uppercase tracking-wider border-b border-slate-800 pb-3">Developer Profile &amp; Engine Preferences</h2>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                    <label class="block text-slate-400 mb-1">Primary Game Engine</label>
-                    <input type="text" @bind="Cart.User.PreferredEngine" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+                    <label for="pref-engine" class="block text-slate-400 mb-1 font-semibold">Primary Game Engine</label>
+                    <select id="pref-engine" @bind="Cart.User.PreferredEngine" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white">
+                        <option value="Godot 4.3">Godot 4.3</option>
+                        <option value="Unity 2023 / 6">Unity 2023 / 6</option>
+                        <option value="GameMaker Studio">GameMaker Studio</option>
+                        <option value="Unreal Engine 5">Unreal Engine 5</option>
+                        <option value="Custom C++ / Raylib">Custom C++ / Raylib</option>
+                    </select>
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Target Publishing Platform</label>
-                    <input type="text" @bind="Cart.User.TargetPlatform" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+                    <label for="pref-platform" class="block text-slate-400 mb-1 font-semibold">Target Publishing Platform</label>
+                    <input id="pref-platform" type="text" @bind="Cart.User.TargetPlatform" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white" />
                 </div>
+            </div>
+
+            <div class="text-xs">
+                <label for="pref-bio" class="block text-slate-400 mb-1 font-semibold">Developer Bio</label>
+                <textarea id="pref-bio" @bind="Cart.User.Bio" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white"></textarea>
             </div>
 
             <div>
-                <label class="block text-slate-400 text-xs mb-1">Developer Bio</label>
-                <textarea @bind="Cart.User.Bio" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white"></textarea>
-            </div>
-            
-            <div class="pt-2">
-                <button @onclick='() => ActiveTab = "Vault"' class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all">
-                    Save Profile Changes
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition-all shadow-md">
+                    Save Profile Preferences
                 </button>
             </div>
-        </div>
+        </form>
     }
 </div>
 
+<!-- Upload Pack Modal -->
 @if (ShowUploadModal)
 {
-    <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-upload-title">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-white">Upload New Asset Pack</h3>
-                <button @onclick="() => ShowUploadModal = false" class="text-slate-400 hover:text-white">✕</button>
+                <div class="flex items-center gap-2">
+                    <h2 id="modal-upload-title" class="text-lg font-bold text-white">Upload New Asset Pack</h2>
+                    <span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs px-2 py-0.5 rounded font-mono">Demo only</span>
+                </div>
+                <button type="button" @onclick="CloseUpload" class="text-slate-400 hover:text-white" aria-label="Close upload modal">✕</button>
             </div>
-            <div class="space-y-3 text-xs">
-                <input type="text" placeholder="Asset Pack Title (e.g. Rogue Knight Spritesheet)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
-                <div class="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center text-slate-500 hover:border-indigo-500 cursor-pointer">
-                    Drag and drop your .aseprite or .zip archive here
+            <form @onsubmit="SubmitUpload" class="space-y-3 text-xs">
+                <div>
+                    <label for="pack-title" class="block text-slate-400 mb-1">Asset Pack Title</label>
+                    <input id="pack-title" type="text" @bind="UploadTitle" @bind:event="oninput" placeholder="e.g. Rogue Knight 16x16 Spritesheet" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" required />
                 </div>
-                <div class="flex gap-2">
-                    <span class="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-md">#godot-ready</span>
-                    <span class="bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">#16x16</span>
-                    <span class="bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">#metroidvania</span>
+                <div class="border-2 border-dashed rounded-2xl p-6 text-center text-slate-400 hover:border-indigo-500 @(IsDragOver ? "border-indigo-500 bg-indigo-500/10" : "border-slate-800")"
+                     @ondragenter="() => IsDragOver = true"
+                     @ondragover="() => IsDragOver = true"
+                     @ondragover:preventDefault
+                     @ondragleave="() => IsDragOver = false"
+                     @ondrop="HandleDrop"
+                     @ondrop:preventDefault>
+                    @if (!string.IsNullOrEmpty(DroppedFileName))
+                    {
+                        <span class="text-emerald-400 font-bold">Selected: @DroppedFileName</span>
+                    }
+                    else
+                    {
+                        <span>Drag and drop your .aseprite or .zip archive here (&lt; 50MB)</span>
+                    }
                 </div>
-                <button @onclick="() => ShowUploadModal = false" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl mt-3">
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl mt-3 shadow-md">
                     Submit Pack to Review
                 </button>
-            </div>
+            </form>
         </div>
     </div>
 }
 
+<ToastHost />
+
 @code {
-    [SupplyParameterFromQuery(Name = "tab")]
-    public string? TabQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "tab")] public string? TabQuery { get; set; }
+
+    public class CheckoutForm
+    {
+        [Required(ErrorMessage = "Receipt email is required.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        public string Email { get; set; } = "";
+    }
 
     private string ActiveTab = "Cart";
-    private string PromoInput = "";
-    private bool ShowUploadModal = false;
+    private int CheckoutStep = 1;
+    private bool IsProcessing;
+    private string CompletedOrderId = "";
     private CheckoutForm CheckoutModel = new();
+
+    private string PromoInput = "";
+    private string PromoFeedback = "";
+    private bool PromoIsSuccess;
+
+    private string VaultSearch = "";
+    private string VaultFilterTier = "All";
+    private readonly HashSet<int> RevealedKeys = new();
+
+    private bool ShowUploadModal;
+    private string UploadTitle = "";
+    private string DroppedFileName = "";
+    private bool IsDragOver;
 
     protected override void OnInitialized()
     {
-        Cart.OnChange += StateHasChanged;
+        base.OnInitialized();
+        CheckoutModel.Email = Cart.User.Email;
     }
 
     protected override void OnParametersSet()
     {
-        // Check query parameter (?tab=checkout vs ?tab=vault)
-        if (!string.IsNullOrWhiteSpace(TabQuery))
+        // ?tab=checkout|cart|vault|settings; otherwise default to Cart when items are waiting
+        ActiveTab = TabQuery?.ToLowerInvariant() switch
         {
-            if (TabQuery.Equals("checkout", StringComparison.OrdinalIgnoreCase) || 
-                TabQuery.Equals("cart", StringComparison.OrdinalIgnoreCase))
-            {
-                ActiveTab = "Cart";
-                return;
-            }
-            if (TabQuery.Equals("vault", StringComparison.OrdinalIgnoreCase))
-            {
-                ActiveTab = "Vault";
-                return;
-            }
-            if (TabQuery.Equals("settings", StringComparison.OrdinalIgnoreCase))
-            {
-                ActiveTab = "Settings";
-                return;
-            }
-        }
-
-        // Intelligently default to Cart if user has items ready to purchase
-        ActiveTab = Cart.CartItems.Any() ? "Cart" : "Vault";
+            "checkout" or "cart" => "Cart",
+            "vault" => "Vault",
+            "settings" => "Settings",
+            _ => Cart.CartItems.Any() ? "Cart" : "Vault"
+        };
     }
 
-    public void Dispose() => Cart.OnChange -= StateHasChanged;
+    private IEnumerable<VaultItem> FilteredVaultItems => Cart.VaultItems
+        .Where(v => string.IsNullOrWhiteSpace(VaultSearch) || v.AssetName.Contains(VaultSearch, StringComparison.OrdinalIgnoreCase))
+        .Where(v => VaultFilterTier == "All" || v.LicenseTier == VaultFilterTier);
 
-    private void ApplyPromo() => Cart.ApplyDiscount(PromoInput);
-
-    private void ProcessCheckout()
+    private void SwitchTab(string tab)
     {
+        ActiveTab = tab;
+        if (tab != "Cart" || CheckoutStep == 3) CheckoutStep = 1;
+    }
+
+    private void ApplyPromo()
+    {
+        var ok = Cart.ApplyDiscount(PromoInput);
+        PromoIsSuccess = ok;
+        PromoFeedback = ok ? $"{Cart.AppliedDiscountCode} applied: {(int)(Cart.DiscountPercent * 100)}% off." : "Invalid promo code.";
+    }
+
+    private async Task ProcessCheckout()
+    {
+        if (IsProcessing || !Cart.CartItems.Any()) return;
+        IsProcessing = true;
+        CheckoutStep = 2;
+        StateHasChanged();
+
+        await Task.Delay(1200); // simulated authorization
+
+        Cart.User.Email = CheckoutModel.Email;
+        CompletedOrderId = "SS-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         Cart.Checkout();
-        // Immediately redirects to Vault after purchase so buyer can download
-        ActiveTab = "Vault";
+        PromoInput = "";
+        PromoFeedback = "";
+        IsProcessing = false;
+        CheckoutStep = 3;
+        Toast.Show("Order complete. Assets added to your vault.", "success");
+    }
+
+    private bool CheckUpdateAvailable(VaultItem item)
+    {
+        var asset = Assets.GetById(item.AssetId);
+        return asset != null && string.Compare(asset.Version, item.Version, StringComparison.OrdinalIgnoreCase) > 0;
+    }
+
+    private void ToggleKeyReveal(int id)
+    {
+        if (!RevealedKeys.Add(id)) RevealedKeys.Remove(id);
+    }
+
+    private async Task CopyKey(string key)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", key);
+            Toast.Show("License key copied.", "success");
+        }
+        catch
+        {
+            Toast.Show("Clipboard unavailable in this browser context.", "error");
+        }
     }
 
     private async Task SimulateDownload(VaultItem item)
     {
+        if (item.IsDownloading) return;
         item.IsDownloading = true;
         item.DownloadProgress = 0;
-        StateHasChanged();
-
-        for (int p = 0; p <= 100; p += 25)
+        for (var p = 10; p <= 100; p += 10)
         {
+            await Task.Delay(120);
             item.DownloadProgress = p;
-            StateHasChanged();
-            await Task.Delay(150);
+            await InvokeAsync(StateHasChanged);
         }
-
         item.IsDownloading = false;
         item.IsDownloaded = true;
-        StateHasChanged();
+        Toast.Show($"{item.AssetName} download complete (simulated).", "success");
     }
 
-    public class CheckoutForm
+    private void SaveSettings()
     {
-        [Required, EmailAddress]
-        public string Email { get; set; } = "alex.dev@games.io";
+        Toast.Show("Profile preferences saved.", "success");
+    }
+
+    private void CloseUpload()
+    {
+        ShowUploadModal = false;
+        IsDragOver = false;
+        DroppedFileName = "";
+        UploadTitle = "";
+    }
+
+    private void HandleDrop(DragEventArgs e)
+    {
+        IsDragOver = false;
+        DroppedFileName = e.DataTransfer?.Files?.FirstOrDefault() ?? "";
+    }
+
+    private void SubmitUpload()
+    {
+        if (string.IsNullOrWhiteSpace(UploadTitle)) return;
+        Toast.Show($"\"{UploadTitle}\" submitted for review (demo only, nothing uploaded).", "success");
+        CloseUpload();
     }
 }

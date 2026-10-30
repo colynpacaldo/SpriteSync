@@ -3,6 +3,7 @@ namespace SpriteSync.Models;
 public class VaultItem
 {
     public int Id { get; set; }
+    public int AssetId { get; set; }
     public string AssetName { get; set; } = "";
     public string Category { get; set; } = "";
     public string LicenseTier { get; set; } = "Personal";

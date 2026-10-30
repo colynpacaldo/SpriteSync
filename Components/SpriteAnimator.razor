@@ -1,0 +1,232 @@
+@implements IDisposable
+@inject IJSRuntime JS
+
+<div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+    <!-- Inspector Header -->
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-4 pb-3 border-b border-slate-800 text-xs">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-bold text-white uppercase tracking-wider">Engine Previewer</span>
+            <span class="text-slate-400 font-mono">| @FrameWidth x @FrameHeight px (scaled @(Zoom * 100)%)</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" @onclick="ToggleGrid"
+                    class="px-2 py-1 rounded text-xs border font-mono transition-colors @(ShowGrid ? "bg-indigo-600/30 text-indigo-300 border-indigo-500/50" : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white")"
+                    title="Toggle pixel grid overlay">
+                Grid: @(ShowGrid ? "ON" : "OFF")
+            </button>
+
+            <div class="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                <span class="text-slate-400 text-xs uppercase font-bold mr-1">Canvas:</span>
+                <button type="button" @onclick='() => CanvasBg = "dark"' class="w-4 h-4 rounded bg-slate-950 border border-slate-700 @(CanvasBg == "dark" ? "ring-2 ring-indigo-500" : "")" title="Dark Canvas" aria-label="Dark canvas"></button>
+                <button type="button" @onclick='() => CanvasBg = "light"' class="w-4 h-4 rounded bg-slate-200 border border-slate-400 @(CanvasBg == "light" ? "ring-2 ring-indigo-500" : "")" title="Light Canvas" aria-label="Light canvas"></button>
+                <button type="button" @onclick='() => CanvasBg = "checkered"' class="w-4 h-4 rounded border border-slate-700 @(CanvasBg == "checkered" ? "ring-2 ring-indigo-500" : "")" style="@CheckerStyle" title="Transparent Grid Canvas" aria-label="Checkered canvas"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Canvas -->
+    <div class="aspect-video rounded-2xl flex flex-col items-center justify-center relative overflow-hidden border border-slate-800 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 @(CanvasBg == "dark" ? "bg-slate-950" : CanvasBg == "light" ? "bg-slate-200" : "")"
+         style="@(CanvasBg == "checkered" ? CheckerStyle : "")"
+         tabindex="0"
+         @onkeydown="HandleKeyDown"
+         @onkeydown:preventDefault="@(false)"
+         aria-label="Interactive animation canvas. Press Space to play/pause, left/right arrow to step frames.">
+
+        @if (Asset.Category == "SFX")
+        {
+            <div class="flex flex-col items-center gap-4 text-center p-6">
+                <div class="w-24 h-24 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-4xl shadow-2xl">🎵</div>
+                <div>
+                    <div class="text-xs uppercase font-mono tracking-widest text-indigo-400 font-bold mb-1">Synthesized Web Audio Preview</div>
+                    <p class="text-xs text-slate-400 max-w-sm">Test retro chiptune samples synthesized via Web Audio API.</p>
+                </div>
+                <div class="flex gap-2 flex-wrap justify-center">
+                    <button type="button" @onclick='() => PlayAudio("square")' class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow">▶ Play Chiptune Tone</button>
+                    <button type="button" @onclick='() => PlayAudio("coin")' class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow">★ Coin Pickup</button>
+                    <button type="button" @onclick='() => PlayAudio("laser")' class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold shadow">⚡ Laser SFX</button>
+                </div>
+            </div>
+        }
+        else if (Asset.SpriteSheet != null)
+        {
+            <div class="relative overflow-hidden @(ShowGrid ? "ring-1 ring-indigo-500/30" : "")"
+                 style="width: @(FrameWidth * Zoom)px; height: @(FrameHeight * Zoom)px;">
+                <div style="width: @(FrameWidth)px; height: @(FrameHeight)px; transform: scale(@Zoom); transform-origin: top left; background-image: url('@Asset.SpriteSheet.SheetUrl'); background-repeat: no-repeat; background-position: -@(CurrentFrameIndex * FrameWidth)px -@(CurrentAnimationRow * FrameHeight)px; image-rendering: pixelated;"></div>
+                @if (ShowGrid)
+                {
+                    <div class="absolute inset-0 border border-indigo-400/40 pointer-events-none"></div>
+                }
+            </div>
+
+            <div class="absolute bottom-3 left-4 text-xs font-mono @(CanvasBg == "light" ? "text-slate-800 bg-white/80" : "text-slate-300 bg-slate-900/90") px-3 py-1.5 rounded-lg backdrop-blur-sm border border-slate-800">
+                State: <strong class="text-indigo-400">@CurrentAnimation</strong> • Frame @(CurrentFrameIndex + 1)/@MaxFrames • @Fps FPS • Zoom @(Zoom)x
+            </div>
+        }
+        else
+        {
+            <img src="@Asset.ImageUrl" alt="Preview of @Asset.Name" class="max-h-full max-w-full object-contain" style="image-rendering: pixelated;" />
+            <div class="absolute bottom-3 left-4 text-xs font-mono text-slate-300 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+                Static preview • no animation data for this pack
+            </div>
+        }
+    </div>
+
+    <!-- Controls Bar -->
+    @if (Asset.SpriteSheet != null)
+    {
+        <div class="mt-4 bg-slate-950 border border-slate-800 p-4 rounded-2xl flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex gap-1.5 flex-wrap">
+                @foreach (var anim in Asset.SpriteSheet.Animations)
+                {
+                    var name = anim.Name;
+                    <button type="button" @onclick="() => SetAnimation(name)"
+                            class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all @(CurrentAnimation == name ? "bg-indigo-600 text-white shadow" : "bg-slate-900 text-slate-400 hover:text-white")"
+                            aria-pressed="@(CurrentAnimation == name ? "true" : "false")">
+                        @name
+                    </button>
+                }
+            </div>
+
+            <div class="flex items-center gap-3 text-xs flex-wrap">
+                <button type="button" @onclick="() => StepFrame(-1)" class="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-200" title="Previous Frame" aria-label="Previous frame">⏮</button>
+                <button type="button" @onclick="TogglePlay" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-200 font-bold min-w-[70px]">
+                    @(IsPlaying ? "Pause" : "Play")
+                </button>
+                <button type="button" @onclick="() => StepFrame(1)" class="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-200" title="Next Frame" aria-label="Next frame">⏭</button>
+
+                <input type="range" min="0" max="@Math.Max(0, MaxFrames - 1)" value="@CurrentFrameIndex" @oninput="OnScrubberChanged" class="w-20 accent-indigo-500 cursor-pointer" aria-label="Frame scrubber" />
+
+                <div class="flex items-center gap-1.5">
+                    <span class="text-slate-400 font-mono text-xs">@Fps FPS</span>
+                    <input type="range" min="1" max="24" @bind="Fps" @bind:event="oninput" class="w-16 accent-indigo-500 cursor-pointer" aria-label="FPS control" />
+                </div>
+
+                <div class="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-xs">
+                    @foreach (var z in new[] { 1, 2, 4, 8 })
+                    {
+                        var zoom = z;
+                        <button type="button" @onclick="() => Zoom = zoom" class="px-2 py-0.5 rounded @(Zoom == zoom ? "bg-indigo-600 text-white font-bold" : "text-slate-400 hover:text-white")">@(zoom)x</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Asset Asset { get; set; } = new();
+
+    private const string CheckerStyle = "background-color:#e2e8f0;background-image:conic-gradient(#94a3b8 25%,transparent 0 50%,#94a3b8 0 75%,transparent 0);background-size:16px 16px;";
+
+    private string CanvasBg = "dark";
+    private string CurrentAnimation = "";
+    private int CurrentFrameIndex = 0;
+    private int Fps = 8;
+    private int Zoom = 4;
+    private bool ShowGrid = false;
+    private bool IsPlaying = true;
+    private CancellationTokenSource? _cts;
+    private IJSObjectReference? _module;
+
+    private int FrameWidth => Asset.SpriteSheet?.FrameWidth ?? 32;
+    private int FrameHeight => Asset.SpriteSheet?.FrameHeight ?? 32;
+    private SpriteAnimation? ActiveAnim => Asset.SpriteSheet?.Animations.FirstOrDefault(a => a.Name == CurrentAnimation)
+                                           ?? Asset.SpriteSheet?.Animations.FirstOrDefault();
+    private int CurrentAnimationRow => ActiveAnim?.Row ?? 0;
+    private int MaxFrames => Math.Max(1, ActiveAnim?.FrameCount ?? 1);
+
+    protected override void OnParametersSet()
+    {
+        var anims = Asset.SpriteSheet?.Animations;
+        if (anims != null && anims.Count > 0 && !anims.Any(a => a.Name == CurrentAnimation))
+        {
+            CurrentAnimation = anims[0].Name;
+            CurrentFrameIndex = 0;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/spritesync.js");
+            if (await _module.InvokeAsync<bool>("prefersReducedMotion"))
+            {
+                IsPlaying = false;
+                StateHasChanged();
+            }
+        }
+        catch { /* JS unavailable (prerender / disconnected) */ }
+
+        _cts = new CancellationTokenSource();
+        _ = RunLoop(_cts.Token);
+    }
+
+    private async Task RunLoop(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(Math.Max(20, 1000 / Math.Max(1, Fps)), token);
+                if (IsPlaying && Asset.SpriteSheet != null)
+                {
+                    CurrentFrameIndex = (CurrentFrameIndex + 1) % MaxFrames;
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (OperationCanceledException) { break; }
+            catch (ObjectDisposedException) { break; }
+        }
+    }
+
+    private void TogglePlay() => IsPlaying = !IsPlaying;
+
+    private void StepFrame(int delta)
+    {
+        IsPlaying = false;
+        CurrentFrameIndex = ((CurrentFrameIndex + delta) % MaxFrames + MaxFrames) % MaxFrames;
+    }
+
+    private void OnScrubberChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var f))
+        {
+            IsPlaying = false;
+            CurrentFrameIndex = Math.Clamp(f, 0, MaxFrames - 1);
+        }
+    }
+
+    private void SetAnimation(string name)
+    {
+        CurrentAnimation = name;
+        CurrentFrameIndex = 0;
+    }
+
+    private void ToggleGrid() => ShowGrid = !ShowGrid;
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == " " || e.Code == "Space") TogglePlay();
+        else if (e.Key == "ArrowRight") StepFrame(1);
+        else if (e.Key == "ArrowLeft") StepFrame(-1);
+    }
+
+    private async Task PlayAudio(string type)
+    {
+        try { if (_module != null) await _module.InvokeVoidAsync("playPreviewTone", type); } catch { }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        if (_module != null)
+        {
+            _ = _module.DisposeAsync().AsTask().ContinueWith(_ => { });
+        }
+    }
+}

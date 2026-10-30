@@ -7,5 +7,7 @@ builder.RootComponents.Add<App>("#app");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<CartStateService>(); // Injected Shared State
+builder.Services.AddScoped<AssetService>();
+builder.Services.AddScoped<ToastService>();
 
 await builder.Build().RunAsync();
