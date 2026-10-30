@@ -2,11 +2,11 @@ namespace SpriteSync.Models;
 
 public class UserProfile
 {
-    public string Username { get; set; } = "Rene Baterbonia";
-    public string Handle { get; set; } = "@rene_baterbonia";
-    public string Email { get; set; } = "rene.baterbonia@devstudio.ph";
-    public string Role { get; set; } = "Solo Indie Developer / Baller";
-    public string Bio { get; set; } = "Crafting a sci-fi metroidvania in Godot 4.3. Passionate about 16-bit pixel art, CRT shaders, and responsive combat.";
+    public string Username { get; set; } = "Indie Developer";
+    public string Handle { get; set; } = "@indie_dev";
+    public string Email { get; set; } = "developer@example.invalid";
+    public string Role { get; set; } = "Solo Indie Developer";
+    public string Bio { get; set; } = "Building a game and collecting useful assets for my next project.";
     public string Avatar { get; set; } = "👾";
     public string PreferredEngine { get; set; } = "Godot 4.3";
     public string TargetPlatform { get; set; } = "Steam / PC";

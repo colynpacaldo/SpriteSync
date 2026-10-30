@@ -151,10 +151,10 @@ else
                 <div class="lg:sticky lg:top-20 bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl shadow-lg">
                     <div class="flex items-end justify-between gap-4 mb-5 pb-4 border-b border-slate-800">
                         <div>
-                            <p class="text-xs text-slate-400">Selected license</p>
-                            <p class="mt-1 text-sm font-semibold text-white">@(IsCommercial ? "Commercial" : "Personal")</p>
+                            <p class="text-xs text-slate-400">@(IsFullyOwned ? "Owned license" : "Selected license")</p>
+                            <p class="mt-1 text-sm font-semibold text-white">@(IsFullyOwned ? "Commercial" : IsCommercial ? "Commercial" : "Personal")</p>
                         </div>
-                        <span class="text-3xl font-bold tracking-tight text-white">@Money.Format(CurrentPrice)</span>
+                        <span class="text-3xl font-bold tracking-tight text-white">@(IsFullyOwned ? "Owned" : Money.Format(CurrentPrice))</span>
                     </div>
 
                     <fieldset class="space-y-2.5 mb-5" disabled="@IsFullyOwned">
@@ -177,7 +177,7 @@ else
                                     <input type="radio" name="licenseTier" value="Commercial" checked="@IsCommercial" @onchange="() => SelectLicense(true)" class="accent-indigo-500" />
                                     <span class="font-semibold text-sm @(IsCommercial ? "text-indigo-300" : "text-white")">Commercial</span>
                                 </div>
-                                <span class="text-sm font-semibold text-white whitespace-nowrap">@Money.Format(IsPersonalOwned ? CurrentAsset.BasePrice * 2 : CurrentAsset.BasePrice * 3)</span>
+                                <span class="text-sm font-semibold text-white whitespace-nowrap">@(IsFullyOwned ? "Owned" : Money.Format(IsPersonalOwned ? CurrentAsset.BasePrice * 2 : CurrentAsset.BasePrice * 3))</span>
                             </div>
                             <p class="text-xs text-slate-400 pl-6">Commercial releases and layered source files.@(IsPersonalOwned ? " Upgrade price shown." : "")</p>
                         </label>
@@ -206,7 +206,7 @@ else
                     }
 
                     <div class="text-center mt-4">
-                        <span class="text-xs text-slate-400">Instant download after checkout · Verified files</span>
+                        <span class="text-xs text-slate-400">Demo only · No payment or files are processed</span>
                     </div>
                 </div>
             </div>
@@ -228,12 +228,20 @@ else
         <!-- Mobile Fixed Purchase Bar -->
         <div class="lg:hidden fixed bottom-0 inset-x-0 bg-slate-900/95 border-t border-slate-800 p-4 z-40 flex items-center justify-between backdrop-blur-lg">
             <div>
-                <span class="text-xs text-slate-400 block">Total (@(IsCommercial ? "Commercial" : "Personal"))</span>
-                <span class="text-lg font-black text-emerald-400">@Money.Format(CurrentPrice)</span>
+                @if (IsFullyOwned)
+                {
+                    <span class="text-xs text-slate-400 block">Owned license</span>
+                    <span class="text-lg font-black text-emerald-400">Commercial</span>
+                }
+                else
+                {
+                    <span class="text-xs text-slate-400 block">Total (@(IsCommercial ? "Commercial" : "Personal"))</span>
+                    <span class="text-lg font-black text-emerald-400">@Money.Format(CurrentPrice)</span>
+                }
             </div>
             @if (IsFullyOwned)
             {
-                <a href="/vault?tab=vault" class="bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs">Owned</a>
+                <a href="/vault?tab=vault" class="bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs">Open Vault</a>
             }
             else if (Cart.IsInCart(CurrentAsset.Id))
             {
@@ -265,7 +273,7 @@ else
     {
         get
         {
-            if (CurrentAsset == null) return 0;
+            if (CurrentAsset == null || IsFullyOwned) return 0;
             if (IsPersonalOwned && IsCommercial) return CurrentAsset.BasePrice * 2; // upgrade difference
             return IsCommercial ? CurrentAsset.BasePrice * 3 : CurrentAsset.BasePrice;
         }
@@ -286,7 +294,7 @@ else
         {
             _loadedId = Id;
             ActiveTab = "Overview";
-            IsCommercial = IsPersonalOwned; // auto-select upgrade when a Personal license is already owned
+            IsCommercial = IsFullyOwned || IsPersonalOwned;
         }
     }
 
@@ -295,7 +303,7 @@ else
     private void AddToCart()
     {
         if (CurrentAsset == null) return;
-        Cart.AddToCart(CurrentAsset, IsCommercial ? "Commercial" : "Personal", CurrentPrice);
+        Cart.AddToCart(CurrentAsset, IsCommercial ? "Commercial" : "Personal");
     }
 
     private void HandleAddRelated(Asset asset) => Cart.AddToCart(asset);

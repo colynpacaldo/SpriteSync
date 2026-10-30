@@ -47,7 +47,10 @@
     <div class="p-4 flex flex-col flex-grow">
         <div class="flex justify-between items-baseline mb-1">
             <a href="/asset/@Item.Id" class="font-bold text-base text-slate-100 hover:text-indigo-400 transition-colors line-clamp-1 focus:outline-none focus-visible:underline">@Item.Name</a>
-            <span class="text-emerald-400 font-extrabold text-base ml-2">@Money.Format(Item.BasePrice)</span>
+            <span class="text-emerald-400 font-extrabold text-base ml-2"
+                  title="@(CurrentCartItem is null ? "Personal license price" : $"{CurrentCartItem.LicenseTier} license in cart")">
+                @Money.Format(CurrentCartItem?.Price ?? Item.BasePrice)
+            </span>
         </div>
 
         <div class="flex items-center gap-2 mb-3 text-xs text-slate-300">
@@ -118,6 +121,7 @@
     private bool IsInCart => Cart.IsInCart(Item.Id);
     private bool IsOwned => Cart.IsOwned(Item.Id);
     private string? OwnedTier => Cart.GetOwnedLicenseTier(Item.Id);
+    private CartItem? CurrentCartItem => Cart.CartItems.FirstOrDefault(item => item.Asset.Id == Item.Id);
     private string FrameLabel => Item.Category == "SFX" ? $"{Item.FrameCount} Samples" : $"{Item.FrameCount} Frames";
     private string DownloadsLabel => Item.Downloads.ToString("N0");
 }

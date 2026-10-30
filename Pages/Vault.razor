@@ -65,7 +65,7 @@
             <div class="flex items-center gap-3 text-xs font-mono font-bold text-slate-400 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
                 <span class="px-2.5 py-1 rounded-lg @(CheckoutStep == 1 ? "bg-indigo-600 text-white" : "text-slate-400")">1. Cart Items</span>
                 <span aria-hidden="true">→</span>
-                <span class="px-2.5 py-1 rounded-lg @(CheckoutStep == 2 ? "bg-indigo-600 text-white" : "text-slate-400")">2. Details &amp; Auth</span>
+                <span class="px-2.5 py-1 rounded-lg @(CheckoutStep == 2 ? "bg-indigo-600 text-white" : "text-slate-400")">2. Demo Details</span>
                 <span aria-hidden="true">→</span>
                 <span class="px-2.5 py-1 rounded-lg @(CheckoutStep == 3 ? "bg-indigo-600 text-white" : "text-slate-400")">3. Complete</span>
             </div>
@@ -74,8 +74,8 @@
             {
                 <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-4 shadow-2xl">
                     <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full flex items-center justify-center text-3xl mx-auto" aria-hidden="true">✓</div>
-                    <h2 class="text-2xl font-black text-white">Order Authorized Successfully!</h2>
-                    <p class="text-xs text-slate-300">Order ID: <strong class="font-mono text-indigo-400">@CompletedOrderId</strong> • Receipt dispatched to developer email.</p>
+                    <h2 class="text-2xl font-black text-white">Demo order completed</h2>
+                    <p class="text-xs text-slate-300">Order ID: <strong class="font-mono text-indigo-400">@CompletedOrderId</strong> • No payment or email was processed.</p>
                     <div class="pt-4 flex justify-center gap-3">
                         <button type="button" @onclick='() => SwitchTab("Vault")' class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md">
                             Go to My Vault
@@ -107,18 +107,19 @@
                         </div>
 
                         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-                            <h2 class="text-base font-bold text-white mb-4">Developer Delivery</h2>
+                            <h2 class="text-base font-bold text-white mb-4">Demo checkout</h2>
+                            <p class="text-xs text-amber-300 mb-4">This is a UI demo. Do not enter real payment or personal information.</p>
                             <EditForm Model="CheckoutModel" OnValidSubmit="ProcessCheckout">
                                 <DataAnnotationsValidator />
                                 <div class="space-y-3 text-xs">
                                     <div>
-                                        <label for="checkout-email" class="block text-slate-400 mb-1">Receipt Email</label>
+                                        <label for="checkout-email" class="block text-slate-400 mb-1">Contact Email (demo only)</label>
                                         <InputText id="checkout-email" @bind-Value="CheckoutModel.Email" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" />
                                         <ValidationMessage For="@(() => CheckoutModel.Email)" class="text-rose-400 text-xs mt-1" />
                                     </div>
                                     <div class="pt-2">
                                         <button type="submit" disabled="@IsProcessing" class="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-black py-3 rounded-xl text-sm transition-all shadow-lg active:scale-95">
-                                            @(IsProcessing ? "Authorizing with Vault..." : $"Authorize & Add to Vault • {Money.Format(Cart.Total)}")
+                                            @(IsProcessing ? "Completing demo..." : $"Complete Demo Order • {Money.Format(Cart.Total)}")
                                         </button>
                                     </div>
                                 </div>
@@ -248,7 +249,7 @@
                                     {
                                         <button type="button" @onclick="() => SimulateDownload(item)"
                                                 class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow inline-flex items-center gap-1.5">
-                                            <span>⬇</span> @(item.IsDownloaded ? "Re-download" : "Download .ZIP")
+                                            <span>⬇</span> @(item.IsDownloaded ? "Simulate again" : "Simulate download")
                                         </button>
                                     }
                                 </td>
@@ -461,7 +462,7 @@
             await JS.InvokeVoidAsync("navigator.clipboard.writeText", key);
             Toast.Show("License key copied.", "success");
         }
-        catch
+        catch (JSException)
         {
             Toast.Show("Clipboard unavailable in this browser context.", "error");
         }
@@ -480,12 +481,12 @@
         }
         item.IsDownloading = false;
         item.IsDownloaded = true;
-        Toast.Show($"{item.AssetName} download complete (simulated).", "success");
+        Toast.Show($"{item.AssetName}: simulated download complete; no file was downloaded.", "success");
     }
 
     private void SaveSettings()
     {
-        Toast.Show("Profile preferences saved.", "success");
+        Toast.Show("Profile preferences updated for this session.", "success");
     }
 
     private void CloseUpload()
@@ -505,7 +506,7 @@
     private void SubmitUpload()
     {
         if (string.IsNullOrWhiteSpace(UploadTitle)) return;
-        Toast.Show($"\"{UploadTitle}\" submitted for review (demo only, nothing uploaded).", "success");
+        Toast.Show($"\"{UploadTitle}\" demo submitted; no file was uploaded.", "success");
         CloseUpload();
     }
 }

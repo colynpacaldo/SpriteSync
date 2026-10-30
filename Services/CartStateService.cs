@@ -54,15 +54,25 @@ public class CartStateService
         return owned.Any(v => v.LicenseTier == "Commercial") ? "Commercial" : "Personal";
     }
 
-    public void AddToCart(Asset asset, string licenseTier = "Personal", decimal price = 0)
+    public void AddToCart(Asset asset, string licenseTier = "Personal")
     {
-        if (GetOwnedLicenseTier(asset.Id) == "Commercial") return; // already fully licensed
-
-        if (price <= 0)
+        ArgumentNullException.ThrowIfNull(asset);
+        if (asset.BasePrice < 0)
         {
-            price = licenseTier == "Commercial" ? asset.BasePrice * 3 : asset.BasePrice;
+            throw new ArgumentOutOfRangeException(nameof(asset), "Asset price cannot be negative.");
         }
 
+        if (licenseTier is not ("Personal" or "Commercial"))
+        {
+            throw new ArgumentOutOfRangeException(nameof(licenseTier), "License tier must be Personal or Commercial.");
+        }
+
+        var ownedTier = GetOwnedLicenseTier(asset.Id);
+        if (ownedTier == "Commercial" || ownedTier == "Personal" && licenseTier == "Personal") return;
+
+        var price = licenseTier == "Commercial"
+            ? asset.BasePrice * (ownedTier == "Personal" ? 2 : 3)
+            : asset.BasePrice;
         var existing = CartItems.FirstOrDefault(ci => ci.Asset.Id == asset.Id);
         if (existing != null)
         {
@@ -130,19 +140,22 @@ public class CartStateService
     }
 
     public decimal Subtotal => CartItems.Sum(ci => ci.Price);
-    public decimal DiscountAmount => Subtotal * DiscountPercent;
+    public decimal DiscountAmount => decimal.Round(Subtotal * DiscountPercent, 2, MidpointRounding.AwayFromZero);
     public decimal Total => Math.Max(0, Subtotal - DiscountAmount);
 
     public void Checkout()
     {
+        if (CartItems.Count == 0) return;
+
+        var amountPaid = Total;
         foreach (var item in CartItems)
         {
-            // A Personal -> Commercial upgrade replaces the existing vault entry instead of duplicating it
-            var upgraded = VaultItems.RemoveAll(v => v.AssetId == item.Asset.Id) > 0;
+            var wasOwned = VaultItems.Any(v => v.AssetId == item.Asset.Id);
+            VaultItems.RemoveAll(v => v.AssetId == item.Asset.Id);
 
             VaultItems.Insert(0, new VaultItem
             {
-                Id = item.Asset.Id,
+                Id = VaultItems.Count == 0 ? 1 : VaultItems.Max(v => v.Id) + 1,
                 AssetId = item.Asset.Id,
                 AssetName = item.Asset.Name,
                 Category = item.Asset.Category,
@@ -153,9 +166,10 @@ public class CartStateService
                 FileSize = $"{Random.Shared.Next(8, 38)}.{Random.Shared.Next(1, 9)} MB",
                 PurchaseDate = DateTime.Now
             });
-            if (!upgraded) User.AssetsOwned++;
-            User.TotalSpent += item.Price;
+            if (!wasOwned) User.AssetsOwned++;
         }
+
+        User.TotalSpent += amountPaid;
         ClearCart();
     }
 
